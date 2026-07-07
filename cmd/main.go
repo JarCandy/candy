@@ -6,23 +6,51 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
+
+func resolvePluginPath() string {
+	candidates := []string{"plugin.wasm", filepath.Join("cmd", "plugin.wasm")}
+
+	if wd, err := os.Getwd(); err == nil {
+		for _, candidate := range candidates {
+			fullPath := filepath.Join(wd, candidate)
+			if _, err := os.Stat(fullPath); err == nil {
+				return fullPath
+			}
+		}
+	}
+
+	if exe, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exe)
+		for _, candidate := range []string{filepath.Join(dir, "plugin.wasm"), filepath.Join(dir, "cmd", "plugin.wasm")} {
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
+		}
+	}
+
+	return filepath.Join("cmd", "plugin.wasm")
+}
 
 func main() {
 	ctx := context.Background()
 	r := wazero.NewRuntime(ctx)
 	defer r.Close(ctx)
 
-	// Инициализируем WASI
+	// Инициализируем WASI для совместимости с TinyGo
 	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
 		log.Fatal(err)
 	}
 
 	// Загружаем скомпилированный плагин
-	wasmBytes, err := os.ReadFile("plugin.wasm")
+	pluginPath := resolvePluginPath()
+	fmt.Printf("Using plugin: %s\n", pluginPath)
+
+	wasmBytes, err := os.ReadFile(pluginPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,9 +73,10 @@ func main() {
 	}
 	reqSize := uint64(len(jsonReq))
 
-	allocFunc := mod.ExportedFunction("allocate")
+	// Changed from "allocate" to "alloc"
+	allocFunc := mod.ExportedFunction("alloc")
 	if allocFunc == nil {
-		log.Fatal("Function 'allocate' not exported")
+		log.Fatal("Function 'alloc' not exported")
 	}
 
 	results, err := allocFunc.Call(ctx, reqSize)
@@ -85,4 +114,5 @@ func main() {
 	}
 
 	fmt.Println(finalResponse["message"])
+
 }
