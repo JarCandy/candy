@@ -2,8 +2,100 @@ package color
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 )
+
+type Theme int
+
+const (
+	ThemeAuto Theme = iota
+	ThemeDark
+	ThemeLight
+)
+
+var CurrentTheme = ThemeAuto
+
+func SetTheme(theme Theme) {
+	CurrentTheme = theme
+}
+
+func DetectTheme() Theme {
+	if fg := os.Getenv("COLORFGBG"); fg != "" {
+		parts := strings.Split(fg, ";")
+
+		if len(parts) > 0 {
+
+			bg, err := strconv.Atoi(parts[len(parts)-1])
+
+			if err == nil {
+				if bg <= 7 {
+					return ThemeDark
+				}
+
+				return ThemeLight
+			}
+		}
+	}
+
+	if os.Getenv("WT_SESSION") != "" {
+		return ThemeDark
+	}
+
+	if os.Getenv("TERM_PROGRAM") == "iTerm.app" {
+		return ThemeDark
+	}
+
+	return ThemeDark
+}
+
+func luminance(c RGB) float64 {
+	return 0.299*float64(c.R) + 0.587*float64(c.G) + 0.114*float64(c.B)
+
+}
+
+func adjustBrightness(c RGB, factor float64) RGB {
+	return RGB{
+		R: uint8(clamp(float64(c.R) * factor)),
+		G: uint8(clamp(float64(c.G) * factor)),
+		B: uint8(clamp(float64(c.B) * factor)),
+	}
+}
+
+func CorrectContrast(c RGB) RGB {
+
+	switch CurrentTheme {
+
+	case ThemeLight:
+		if luminance(c) > 120 {
+			return adjustBrightness(c, 0.55)
+		}
+
+		return c
+
+	case ThemeDark:
+		if luminance(c) < 80 {
+			return adjustBrightness(c, 1.7)
+		}
+
+		return c
+	}
+
+	return c
+}
+
+func clamp(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+
+	if v > 255 {
+		return 255
+	}
+
+	return v
+}
 
 var Enabled = true
 
@@ -143,11 +235,27 @@ type GradientStop struct {
 }
 
 func rgbStyle(c RGB) Style {
-	return Style(fmt.Sprintf("38;2;%d;%d;%d", c.R, c.G, c.B))
+
+	c = CorrectContrast(c)
+
+	return Style(fmt.Sprintf(
+		"38;2;%d;%d;%d",
+		c.R,
+		c.G,
+		c.B,
+	))
 }
 
 func bgRGBStyle(c RGB) Style {
-	return Style(fmt.Sprintf("48;2;%d;%d;%d", c.R, c.G, c.B))
+
+	c = CorrectContrast(c)
+
+	return Style(fmt.Sprintf(
+		"48;2;%d;%d;%d",
+		c.R,
+		c.G,
+		c.B,
+	))
 }
 
 func lerp(a, b uint8, t float64) uint8 {

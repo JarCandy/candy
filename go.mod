@@ -1,4 +1,4 @@
-module candy
+module github.com/JarCandy/candy
 
 go 1.25.6
 
