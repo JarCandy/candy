@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/JarCandy/candy/core/cli"
+	"github.com/CandyCrafts/candy/internal/cli"
 )
 
 func main() {
