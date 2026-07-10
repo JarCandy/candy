@@ -130,6 +130,8 @@ var keywords = map[string]Kind{
 	"use":     USE,
 	"pub":     PUB,
 	"let":     LET,
+	"true":    TRUE,
+	"false":   FALSE,
 }
 
 func SearchKeyword(ident []byte) Kind {
