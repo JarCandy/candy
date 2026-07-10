@@ -1,6 +1,6 @@
 package cli
 
-import "github.com/rp1s/colorista"
+import color "github.com/rp1s/colorista"
 
 const candyArt = `
  ██████╗ █████╗ ███╗   ██╗██████╗ ██╗   ██╗   ██╗  ██╗███████╗██╗     ██████╗
@@ -12,24 +12,25 @@ const candyArt = `
 
  `
 
-var candyGradientArt = []colorista.GradientPos{
-	{Pos: 0.00, Color: colorista.RGB{R: 255, G: 70, B: 165}},  // bubblegum
-	{Pos: 0.10, Color: colorista.RGB{R: 255, G: 120, B: 220}}, // cotton candy
-	{Pos: 0.20, Color: colorista.RGB{R: 210, G: 90, B: 255}},  // grape
-	{Pos: 0.30, Color: colorista.RGB{R: 120, G: 90, B: 255}},  // violet blue
-	{Pos: 0.40, Color: colorista.RGB{R: 70, G: 170, B: 255}},  // blue raspberry
-	{Pos: 0.50, Color: colorista.RGB{R: 60, G: 240, B: 255}},  // ice cyan
-	{Pos: 0.60, Color: colorista.RGB{R: 90, G: 255, B: 210}},  // mint
-	{Pos: 0.70, Color: colorista.RGB{R: 170, G: 255, B: 130}}, // lime
-	{Pos: 0.80, Color: colorista.RGB{R: 255, G: 245, B: 90}},  // lemon
-	{Pos: 0.90, Color: colorista.RGB{R: 255, G: 175, B: 90}},  // peach
-	{Pos: 1.00, Color: colorista.RGB{R: 255, G: 90, B: 150}},  // strawberry
+var candyGradientArt = []color.GradientPos{
+	{Pos: 0.00, Color: color.RGB{R: 255, G: 70, B: 165}},  // bubblegum
+	{Pos: 0.10, Color: color.RGB{R: 255, G: 120, B: 220}}, // cotton candy
+	{Pos: 0.20, Color: color.RGB{R: 210, G: 90, B: 255}},  // grape
+	{Pos: 0.30, Color: color.RGB{R: 120, G: 90, B: 255}},  // violet blue
+	{Pos: 0.40, Color: color.RGB{R: 70, G: 170, B: 255}},  // blue raspberry
+	{Pos: 0.50, Color: color.RGB{R: 60, G: 240, B: 255}},  // ice cyan
+	{Pos: 0.60, Color: color.RGB{R: 90, G: 255, B: 210}},  // mint
+	{Pos: 0.70, Color: color.RGB{R: 170, G: 255, B: 130}}, // lime
+	{Pos: 0.80, Color: color.RGB{R: 255, G: 245, B: 90}},  // lemon
+	{Pos: 0.90, Color: color.RGB{R: 255, G: 175, B: 90}},  // peach
+	{Pos: 1.00, Color: color.RGB{R: 255, G: 90, B: 150}},  // strawberry
 }
-var candyGradient = []colorista.GradientPos{
-	{Pos: 0.00, Color: colorista.RGB{R: 255, G: 80, B: 180}},  // pink
-	{Pos: 0.20, Color: colorista.RGB{R: 255, G: 120, B: 220}}, // candy
-	{Pos: 0.40, Color: colorista.RGB{R: 170, G: 80, B: 255}},  // purple
-	{Pos: 0.60, Color: colorista.RGB{R: 80, G: 180, B: 255}},  // sky
-	{Pos: 0.80, Color: colorista.RGB{R: 80, G: 255, B: 220}},  // mint
-	{Pos: 1.00, Color: colorista.RGB{R: 255, G: 240, B: 80}},  // yellow
+
+var candyGradient = []color.GradientPos{
+	{Pos: 0.00, Color: color.RGB{R: 255, G: 80, B: 180}},  // pink
+	{Pos: 0.20, Color: color.RGB{R: 255, G: 120, B: 220}}, // candy
+	{Pos: 0.40, Color: color.RGB{R: 170, G: 80, B: 255}},  // purple
+	{Pos: 0.60, Color: color.RGB{R: 80, G: 180, B: 255}},  // sky
+	{Pos: 0.80, Color: color.RGB{R: 80, G: 255, B: 220}},  // mint
+	{Pos: 1.00, Color: color.RGB{R: 255, G: 240, B: 80}},  // yellow
 }

@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/CandyCrafts/candy/internal/project"
 	"github.com/rp1s/colorista"
 )
 
@@ -53,5 +54,14 @@ func Help() error {
 	sln(sb, cls.Apply("   Show this help message", colorista.Rgb(colorista.RGB{R: 217, G: 217, B: 217})))
 
 	println(sb.String())
+	return nil
+}
+
+func Build() error {
+	project, err := project.Load()
+	if err != nil {
+		return err
+	}
+	_ = project
 	return nil
 }
