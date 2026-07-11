@@ -1,0 +1,14 @@
+// Std interface internal
+
+use::(
+    "github.com/CandyCrafts/DevKitPlugin" -> dk,
+)
+
+pub let (
+    flag1: std::type::string,
+)
+
+pub impl (
+    v: dk::metod(min: dk::type::ctn, max: dk::type::ctn);
+    v -> email: dk::metod(host: []dk::type::string, IsWhiteList: dk::type::bool = dk::type::bool(true))
+)

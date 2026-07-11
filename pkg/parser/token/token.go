@@ -28,6 +28,8 @@ const (
 	PACKAGE // package
 	USE     // use
 
+	IMPL // impl
+
 	PUB // pub
 	LET // let
 
@@ -129,6 +131,7 @@ var keywords = map[string]Kind{
 	"package": PACKAGE,
 	"use":     USE,
 	"pub":     PUB,
+	"impl":    IMPL,
 	"let":     LET,
 	"true":    TRUE,
 	"false":   FALSE,

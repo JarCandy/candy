@@ -225,6 +225,7 @@ func (lex *Lexer) NextToken() Token {
 			if lex.interpStack[n-1] == 0 {
 				lex.interpStack = lex.interpStack[:n-1]
 				lex.inStringResume = true
+				return lex.tok(TEMPLATE_E)
 			}
 		}
 		return lex.tok(R_BRACE)
