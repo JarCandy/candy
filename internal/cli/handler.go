@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/CandyCrafts/candy/internal/project"
+	"github.com/CandyCrafts/candy/internal/composer"
 	"github.com/rp1s/colorista"
 )
 
@@ -41,7 +41,7 @@ func Help() error {
 	sb := &strings.Builder{}
 	cls := colorista.NewColorista(colorista.ThemeAuto)
 
-	sln(sb, cls.Gradient(candyArt, candyGradientArt))
+	sln(sb, RenderString(Candy))
 	sln(sb, cls.Gradient("Usage: candy <command> [options]\n", candyGradient))
 
 	sln(sb, cls.Gradient("Commands:", candyGradient))
@@ -58,7 +58,7 @@ func Help() error {
 }
 
 func Build() error {
-	project, err := project.Load()
+	project, err := composer.Load()
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package project
+package composer
 
 type Project struct {
 }

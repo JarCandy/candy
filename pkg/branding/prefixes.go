@@ -1,5 +1,5 @@
 package branding
 
 var (
-	PrefixInterfacePluginFile string = ".cp"
+	PrefixInterfaceFile string = ".ci"
 )

@@ -1,4 +1,4 @@
-package plugin
+package composer
 
 import (
 	"fmt"
@@ -46,7 +46,7 @@ func (p *ProjectPlugin) Default(projectPatch string) {
 
 	p.Custom.PluginPath = valueOrDefault(p.Custom.PluginPath, "out/plugin.wasm")
 	p.Custom.DescriptionPath = valueOrDefault(p.Custom.DescriptionPath, "d.txt")
-	p.Custom.InterfacePath = valueOrDefault(p.Custom.InterfacePath, "interface"+branding.PrefixInterfacePluginFile)
+	p.Custom.InterfacePath = valueOrDefault(p.Custom.InterfacePath, "interface"+branding.PrefixInterfaceFile)
 }
 
 func DownloadProjectPlagin(url string, localPath string) error {

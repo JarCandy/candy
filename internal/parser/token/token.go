@@ -33,9 +33,9 @@ const (
 	PUB // pub
 	LET // let
 
-	ASSIGN             // =
-	TRANSITION         // ->
-	REVERSE_TRANSITION // <-
+	ASSIGN     // =
+	TRANSITION // ->
+	RRT        // <-
 
 	SUB // -
 	ADD // +
@@ -50,7 +50,7 @@ const (
 	TEMPLATE_S // &{ tokens
 	TEMPLATE_E // }
 
-	REF // &
+	RA // &
 
 	L_PAREN // (
 	R_PAREN // )
@@ -59,11 +59,11 @@ const (
 	L_BRACK // [
 	R_BRACK // ]
 
-	COLON        // :
-	DOUBLE_COLON // ::
-	END          // ;
-	COMMA        // ,
-	DOT          // .
+	COLON   // :
+	D_COLON // ::
+	END     // ;
+	COMMA   // ,
+	DOT     // .
 
 )
 
@@ -81,10 +81,10 @@ type Position struct {
 	Offset   uint64
 }
 
-func (tk Token) Literal(source *[]byte) []byte {
-	b := (*source)[tk.Start:tk.End]
+func (self Token) Literal(source *[]byte) []byte {
+	b := (*source)[self.Start:self.End]
 
-	switch tk.Kind {
+	switch self.Kind {
 	case STRING, RAW_STRING:
 		if len(b) >= 1 && b[0] == '"' {
 			if len(b) >= 2 && b[len(b)-1] == '"' {
@@ -142,4 +142,99 @@ func SearchKeyword(ident []byte) Kind {
 		return kind
 	}
 	return IDENTIFIER
+}
+
+func (self Kind) String() string {
+	switch self {
+	case ILLEGAL:
+		return "ILLEGAL"
+	case COMMENT:
+		return "COMMENT"
+	case M_COMMENT:
+		return "M_COMMENT"
+	case SPACING:
+		return "SPACING"
+	case EOF:
+		return "EOF"
+	case INTEGER:
+		return "INTEGER"
+	case IMAGINARY:
+		return "IMAGINARY"
+	case FLOATING:
+		return "FLOATING"
+	case STRING:
+		return "STRING"
+	case RAW_STRING:
+		return "RAW_STRING"
+	case CHARACTER:
+		return "CHARACTER"
+	case IDENTIFIER:
+		return "IDENTIFIER"
+	case TRUE:
+		return "TRUE"
+	case FALSE:
+		return "FALSE"
+	case PACKAGE:
+		return "PACKAGE"
+	case USE:
+		return "USE"
+	case IMPL:
+		return "IMPL"
+	case PUB:
+		return "PUB"
+	case LET:
+		return "LET"
+	case ASSIGN:
+		return "ASSIGN"
+	case TRANSITION:
+		return "TRANSITION"
+	case RRT:
+		return "RRT"
+	case SUB:
+		return "SUB"
+	case ADD:
+		return "ADD"
+	case MUL:
+		return "MUL"
+	case DIV:
+		return "DIV"
+	case MOD:
+		return "MOD"
+	case POW:
+		return "POW"
+	case ATTR_S:
+		return "ATTR_S"
+	case ATTR_E:
+		return "ATTR_E"
+	case TEMPLATE_S:
+		return "TEMPLATE_S"
+	case TEMPLATE_E:
+		return "TEMPLATE_E"
+	case RA:
+		return "RA"
+	case L_PAREN:
+		return "L_PAREN"
+	case R_PAREN:
+		return "R_PAREN"
+	case L_BRACE:
+		return "L_BRACE"
+	case R_BRACE:
+		return "R_BRACE"
+	case L_BRACK:
+		return "L_BRACK"
+	case R_BRACK:
+		return "R_BRACK"
+	case COLON:
+		return "COLON"
+	case D_COLON:
+		return "D_COLON"
+	case END:
+		return "END"
+	case COMMA:
+		return "COMMA"
+	case DOT:
+		return "DOT"
+	default:
+		return "UNKNOWN"
+	}
 }

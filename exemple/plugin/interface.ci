@@ -5,10 +5,10 @@ use::(
 )
 
 pub let (
-    flag1: std::type::string,
+    flag1: dk::type::string,
 )
 
 pub impl (
-    v: dk::metod(min: dk::type::ctn, max: dk::type::ctn);
-    v -> email: dk::metod(host: []dk::type::string, IsWhiteList: dk::type::bool = dk::type::bool(true))
+    v: dk::attr(min: dk::type::ctn, max: dk::type::ctn);
+    v -> email: dk::attr(host: []dk::type::string, IsWhiteList: dk::type::bool = dk::type::bool(true))
 )
