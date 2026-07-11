@@ -58,7 +58,7 @@ func Help() error {
 }
 
 func Build() error {
-	project, err := composer.Load()
+	project, err := composer.Load("", "")
 	if err != nil {
 		return err
 	}

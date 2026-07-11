@@ -27,5 +27,5 @@ type Package struct {
 	Name string
 }
 
-func (self Package) node()
-func (self Package) decl()
+func (self Package) node() {}
+func (self Package) decl() {}

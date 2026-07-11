@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/pkg/parser/token"
+	"github.com/CandyCrafts/candy/internal/parser/token"
 
 	"github.com/CandyCrafts/candy/internal/parser/lexer"
 	"github.com/k0kubun/pp"

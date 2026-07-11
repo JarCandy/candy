@@ -3,7 +3,7 @@ package lexer
 import (
 	"unicode/utf8"
 
-	. "github.com/CandyCrafts/candy/pkg/parser/token"
+	. "github.com/CandyCrafts/candy/internal/parser/token"
 )
 
 type Lexer struct {

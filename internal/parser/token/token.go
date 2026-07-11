@@ -67,6 +67,65 @@ const (
 
 )
 
+func Group(tk Kind) Kind {
+	return tk.Group()
+}
+
+func (self *Kind) Group() Kind {
+	switch *self {
+	case INTEGER, IMAGINARY, FLOATING:
+		return G_NUMBER
+	case STRING, RAW_STRING, CHARACTER:
+		return G_STRING
+	case SUB, ADD, MUL, DIV, MOD, POW:
+		return G_ARITHMETIC
+	case G_ARITHMETIC, G_STRING, IDENTIFIER:
+		return G_LITERAL
+	default:
+		return *self
+	}
+}
+
+func Expand(tk Kind) []Kind {
+	switch tk {
+	case G_LITERAL:
+		return []Kind{
+			G_NUMBER,
+			G_STRING,
+			INTEGER,
+			IMAGINARY,
+			FLOATING,
+			STRING,
+			RAW_STRING,
+			CHARACTER,
+			IDENTIFIER,
+		}
+	case G_NUMBER:
+		return []Kind{
+			INTEGER,
+			IMAGINARY,
+			FLOATING,
+		}
+	case G_STRING:
+		return []Kind{
+			STRING,
+			RAW_STRING,
+			CHARACTER,
+		}
+	case G_ARITHMETIC:
+		return []Kind{
+			SUB,
+			ADD,
+			MUL,
+			DIV,
+			MOD,
+			POW,
+		}
+	default:
+		return nil
+	}
+}
+
 type Token struct {
 	Kind  Kind
 	Pos   Position
