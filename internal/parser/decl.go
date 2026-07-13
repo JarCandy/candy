@@ -6,15 +6,15 @@ type Package struct {
 	Name string
 }
 
-func (self Package) node() {}
-func (self Package) decl() {}
+func (Package) node() {}
+func (Package) decl() {}
 
 type Use struct {
 	Path string
 }
 
-func (self Use) node() {}
-func (self Use) decl() {}
+func (Use) node() {}
+func (Use) decl() {}
 
 func (self *Parser) parsePackage() *Package {
 	if !self.match(token.PACKAGE) {

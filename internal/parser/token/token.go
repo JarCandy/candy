@@ -72,11 +72,20 @@ const (
 
 )
 
+func kindPtr(k Kind) *Kind {
+	return &k
+}
+
 func Group(tk Kind) Kind {
-	return tk.Group()
+	k := kindPtr(tk.group())
+	return k.group()
 }
 
 func (self *Kind) Group() Kind {
+	return Group(*self)
+}
+
+func (self *Kind) group() Kind {
 	switch *self {
 	case INTEGER, IMAGINARY, FLOATING:
 		return G_NUMBER

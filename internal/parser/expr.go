@@ -165,8 +165,8 @@ type Call struct {
 	Args []Arg
 }
 
-func (self Call) node() {}
-func (self Call) expr() {}
+func (Call) node() {}
+func (Call) expr() {}
 
 type Arg struct {
 	Name  *string // nil -> ("string")
