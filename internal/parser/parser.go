@@ -46,26 +46,47 @@ func isTrivia(kind token.Kind) bool {
 }
 
 func (self *Parser) Run() (*AST, error) {
-	switch self.curTk.Kind {
-	case token.PACKAGE:
-		break
-	case token.USE:
-		break
-	case token.IDENTIFIER:
-		break
-	case token.PUB:
-		break
-	case token.LET:
-		break
-	case token.ATTR_S:
-		break
+	var ast AST
+
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.PACKAGE:
+			if decl := self.parsePackage(); decl != nil {
+				ast.Decls = append(ast.Decls, decl)
+			}
+		case token.USE:
+			if decl := self.parseUse(); decl != nil {
+				ast.Decls = append(ast.Decls, decl)
+			}
+		case token.IDENTIFIER:
+			self.next()
+		case token.PUB:
+			self.next()
+		case token.LET:
+			self.next()
+		case token.ATTR_S:
+			self.next()
+		default:
+			// TODO: report an error here for an unexpected top-level token.
+			self.next()
+		}
 	}
-	return &AST{}, nil
+
+	return &ast, nil
 }
 
 func (self *Parser) match(kinds ...token.Kind) bool {
 	for _, k := range kinds {
 		if k == self.curTk.Kind {
+			return true
+		}
+	}
+	return false
+}
+
+func (self *Parser) match_group(kinds ...token.Kind) bool {
+	for _, k := range kinds {
+		if k == token.Group(self.curTk.Kind) {
 			return true
 		}
 	}

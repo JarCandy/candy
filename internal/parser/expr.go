@@ -1,6 +1,9 @@
 package parser
 
-import "github.com/CandyCrafts/candy/internal/parser/token"
+import (
+	"github.com/CandyCrafts/candy/internal/parser/token"
+	"github.com/CandyCrafts/candy/internal/types"
+)
 
 const (
 	Lowest = iota
@@ -61,11 +64,15 @@ func precedence(kind token.Kind) int {
 	}
 }
 
-func (self *Parser) ParseExpr() Expr {
+func exprPtr(expr Expr) *Expr {
+	return &expr
+}
+
+func (self *Parser) ParseExpr() *Expr {
 	return self.parseExpr(Lowest)
 }
 
-func (self *Parser) parseExpr(pre int) Expr {
+func (self *Parser) parseExpr(pre int) *Expr {
 	left := self.parsePrefix()
 
 	for {
@@ -82,25 +89,26 @@ func (self *Parser) parseExpr(pre int) Expr {
 		self.next()
 		right := self.parseExpr(pred)
 
-		left = BinaryExpr{
-			Left:  left,
+		left = exprPtr(BinaryExpr{
+			Left:  *left,
 			Op:    op,
-			Right: right,
-		}
+			Right: *right,
+		})
 	}
 
 	return left
 }
 
-func (self *Parser) parsePrefix() Expr {
+func (self *Parser) parsePrefix() *Expr {
 	switch self.curTk.Kind {
 	case token.SUB:
 		op := self.curTk
 		self.next()
-		return UnaryExpr{
+		x := self.parseExpr(Prefix)
+		return exprPtr(UnaryExpr{
 			Op: op,
-			X:  self.parseExpr(Prefix),
-		}
+			X:  *x,
+		})
 
 	case token.INTEGER,
 		token.FLOATING,
@@ -120,24 +128,55 @@ func (self *Parser) parsePrefix() Expr {
 		expr := self.parseExpr(Lowest)
 		if self.curTk.Kind == token.R_PAREN {
 			self.next()
+		} else {
+			// TODO: report an error here for a missing closing ')'.
 		}
 		return expr
 
 	default:
 		tk := self.curTk
+		// TODO: report an error here for an unexpected expression token.
 		self.next()
-		return InvalidExpr{Token: tk}
+		return exprPtr(InvalidExpr{Token: tk})
 	}
 }
 
-func (self *Parser) parseLiteral() Expr {
+func (self *Parser) parseLiteral() *Expr {
 	tk := self.curTk
 	self.next()
-	return LiteralExpr{Value: tk}
+	return exprPtr(LiteralExpr{Value: tk})
 }
 
-func (self *Parser) parseIdent() Expr {
+func (self *Parser) parseIdent() *Expr {
 	tk := self.curTk
 	self.next()
-	return IdentExpr{Name: tk}
+	return exprPtr(IdentExpr{Name: tk})
+}
+
+// Expr Call
+
+type Vaule struct {
+	Type  types.Type
+	Value string
+}
+
+type Call struct {
+	Path []string // db::sqlite()
+	Args []Arg
+}
+
+func (self Call) node() {}
+func (self Call) expr() {}
+
+type Arg struct {
+	Name  *string // nil -> ("string")
+	Vaule Vaule
+}
+
+func (Arg) node() {}
+func (Arg) expr() {}
+
+func (self *Parser) parseCall() *Call {
+
+	return nil
 }

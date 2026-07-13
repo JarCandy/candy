@@ -1,5 +1,9 @@
 package token
 
+import (
+	"github.com/CandyCrafts/candy/internal/types"
+)
+
 type Kind uint8
 
 const (
@@ -28,7 +32,8 @@ const (
 	PACKAGE // package
 	USE     // use
 
-	IMPL // impl
+	IMPL  // impl a keyword for cross-platform compiler operation
+	MODEL // model a keyword for cross-platform compiler operation
 
 	PUB // pub
 	LET // let
@@ -79,7 +84,7 @@ func (self *Kind) Group() Kind {
 		return G_STRING
 	case SUB, ADD, MUL, DIV, MOD, POW:
 		return G_ARITHMETIC
-	case G_ARITHMETIC, G_STRING, IDENTIFIER:
+	case G_ARITHMETIC, G_STRING, IDENTIFIER, G_NUMBER, TRUE, FALSE:
 		return G_LITERAL
 	default:
 		return *self
@@ -96,6 +101,8 @@ func Expand(tk Kind) []Kind {
 			IMAGINARY,
 			FLOATING,
 			STRING,
+			TRUE,
+			FALSE,
 			RAW_STRING,
 			CHARACTER,
 			IDENTIFIER,
@@ -191,6 +198,7 @@ var keywords = map[string]Kind{
 	"use":     USE,
 	"pub":     PUB,
 	"impl":    IMPL,
+	"model":   MODEL,
 	"let":     LET,
 	"true":    TRUE,
 	"false":   FALSE,
@@ -239,6 +247,8 @@ func (self Kind) String() string {
 		return "USE"
 	case IMPL:
 		return "IMPL"
+	case MODEL:
+		return "MODEL"
 	case PUB:
 		return "PUB"
 	case LET:
@@ -295,5 +305,24 @@ func (self Kind) String() string {
 		return "DOT"
 	default:
 		return "UNKNOWN"
+	}
+}
+
+func (self Kind) TypeFromKind() types.Type {
+	switch self {
+	case TRUE, FALSE:
+		return types.Bool
+	case CHARACTER:
+		return types.Char
+	case INTEGER:
+		return types.Int
+	case FLOATING:
+		return types.Float
+	case IMAGINARY:
+		return types.Complex
+	case STRING, RAW_STRING, IDENTIFIER:
+		return types.String
+	default:
+		return types.Null
 	}
 }

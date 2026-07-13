@@ -1,7 +1,8 @@
 package parser
 
 type AST struct {
-	Root Node
+	Root  Node
+	Decls []Decl
 }
 
 type Node interface {
@@ -22,10 +23,3 @@ type Stmt interface {
 	Node
 	stmt()
 }
-
-type Package struct {
-	Name string
-}
-
-func (self Package) node() {}
-func (self Package) decl() {}

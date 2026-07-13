@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -53,7 +54,7 @@ func Help() error {
 	s(sb, "  -h, --help")
 	sln(sb, cls.Apply("   Show this help message", colorista.Rgb(colorista.RGB{R: 217, G: 217, B: 217})))
 
-	println(sb.String())
+	fmt.Print(sb.String())
 	return nil
 }
 
