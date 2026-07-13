@@ -154,16 +154,16 @@ func (self *Parser) parseIdent() *Expr {
 type Vaule struct {
 	Type       types.Type
 	Value      string // "" -> AccessAttr
-	AccessAttr *AccessAttr
+	AccessAttr *Attr
 }
 
-type AccessAttr struct {
+type Attr struct {
 	Path []string // db::sqlite()
 	Args []*Expr  // Arg && Call db::sqlite(db::std::name())
 }
 
-func (AccessAttr) node() {}
-func (AccessAttr) expr() {}
+func (Attr) node() {}
+func (Attr) expr() {}
 
 type Arg struct {
 	Name  *string // nil -> ("string")
@@ -173,34 +173,41 @@ type Arg struct {
 func (Arg) node() {}
 func (Arg) expr() {}
 
-func (self *Parser) parseAccessAttr() *AccessAttr {
+func (self *Parser) parseAccessAttr() *Attr {
 	if !self.match(token.IDENTIFIER) {
 		panic("The *Parser.parseAccessAttr function was used incorrectly.")
 	}
 
-	for !self.match(token.L_PAREN, token.EOF) {
+	attr := &Attr{
+		Path: make([]string, 0),
+	}
+
+	for !self.match(token.R_PAREN, token.COMMA, token.EOF) {
 		if !self.match(token.IDENTIFIER) {
 			// todo error
 			return nil
 		}
-		aa := &AccessAttr{
-			Path: make([]string, 0),
-		}
-		aa.Path = append(aa.Path, string(self.curTk.Literal(&self.Lex.Input)))
+
+		attr.Path = append(attr.Path, string(self.curTk.Literal(&self.Lex.Input)))
 		self.next()
 
 		if !self.match(token.D_COLON) {
-			// todo error
-			return nil
+			if self.match(token.L_PAREN) {
+				args := self.parseArgs()
+				attr.Args = append(attr.Args, argsToExprs(args)...)
+			}
+			return attr
 		}
 		self.next()
 
-		args := self.parseArgs()
-		aa.Args = argsToExprs(args)
-
+		if self.match(token.L_PAREN) {
+			args := self.parseArgs()
+			attr.Args = append(attr.Args, argsToExprs(args)...)
+			return attr
+		}
 	}
 
-	return nil
+	return attr
 }
 
 func argsToExprs(args []*Arg) []*Expr {
@@ -217,78 +224,75 @@ func (self *Parser) parseArgs() []*Arg {
 	}
 	self.next()
 
-	isComma := false
 	args := make([]*Arg, 0)
 
 	for !self.match(token.R_PAREN, token.EOF) {
-		if !isComma {
+		arg := self.parseArg()
+		if arg == nil {
 			// todo error
 			return nil
-		} else {
-			isComma = false
 		}
-
-		if self.match(token.IDENTIFIER) && self.match_peek(token.COLON) {
-			tk := self.curTk
-			self.next().next()
-
-			if !self.match_group(token.G_LITERAL) {
-				arg := self.parseAccessAttr()
-				if arg == nil {
-					// todo error
-					return nil
-				}
-
-				args = append(args, &Arg{
-					Name: ptr(string(tk.Literal(&self.Lex.Input))),
-					Vaule: Vaule{
-						Type:       types.Expr,
-						Value:      "",
-						AccessAttr: arg,
-					},
-				})
-			}
-			args = append(args, &Arg{
-				Name: ptr(string(tk.Literal(&self.Lex.Input))),
-				Vaule: Vaule{
-					Type:       self.curTk.Kind.TypeFromKind(),
-					Value:      string(self.curTk.Literal(&self.Lex.Input)),
-					AccessAttr: nil,
-				},
-			})
-		} else if self.match(token.IDENTIFIER) && !self.match_peek(token.COLON) {
-			if !self.match_group(token.G_LITERAL) {
-				arg := self.parseAccessAttr()
-				if arg == nil {
-					// todo error
-					return nil
-				}
-
-				args = append(args, &Arg{
-					Name: nil,
-					Vaule: Vaule{
-						Type:       types.Expr,
-						Value:      "",
-						AccessAttr: arg,
-					},
-				})
-			}
-			args = append(args, &Arg{
-				Name: ptr(string(self.curTk.Literal(&self.Lex.Input))),
-				Vaule: Vaule{
-					Type:       self.curTk.Kind.TypeFromKind(),
-					Value:      string(self.curTk.Literal(&self.Lex.Input)),
-					AccessAttr: nil,
-				},
-			})
-		}
+		args = append(args, arg)
 
 		if self.match(token.COMMA) {
-			isComma = true
 			self.next()
 			continue
 		}
+
+		if !self.match(token.R_PAREN) {
+			// todo error
+			return nil
+		}
 	}
 
+	if self.match(token.R_PAREN) {
+		self.next()
+	}
 	return args
+}
+
+func (self *Parser) parseArg() *Arg {
+	if self.match(token.IDENTIFIER) && self.match_peek(token.COLON) {
+		tk := self.curTk
+		name := string(tk.Literal(&self.Lex.Input))
+		self.next().next()
+		return self.parseArgValue(ptr(name))
+	}
+
+	return self.parseArgValue(nil)
+}
+
+func (self *Parser) parseArgValue(name *string) *Arg {
+	if self.match(token.IDENTIFIER) && self.match_peek(token.D_COLON) {
+		arg := self.parseAccessAttr()
+		if arg == nil {
+			// todo error
+			return nil
+		}
+
+		return &Arg{
+			Name: name,
+			Vaule: Vaule{
+				Type:       types.Expr,
+				Value:      "",
+				AccessAttr: arg,
+			},
+		}
+	}
+
+	if !self.match_group(token.G_LITERAL) {
+		// todo error
+		return nil
+	}
+
+	arg := &Arg{
+		Name: name,
+		Vaule: Vaule{
+			Type:       self.curTk.Kind.TypeFromKind(),
+			Value:      string(self.curTk.Literal(&self.Lex.Input)),
+			AccessAttr: nil,
+		},
+	}
+	self.next()
+	return arg
 }

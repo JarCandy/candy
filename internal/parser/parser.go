@@ -85,12 +85,20 @@ func (self *Parser) match(kinds ...token.Kind) bool {
 }
 
 func (self *Parser) match_group(kinds ...token.Kind) bool {
-	for _, k := range kinds {
-		if k == token.Group(self.curTk.Kind) {
-			return true
+	kind := self.curTk.Kind
+	for {
+		for _, k := range kinds {
+			if k == kind {
+				return true
+			}
 		}
+
+		group := token.Group(kind)
+		if group == kind {
+			return false
+		}
+		kind = group
 	}
-	return false
 }
 
 func (self *Parser) match_peek(kinds ...token.Kind) bool {
