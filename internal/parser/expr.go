@@ -36,16 +36,16 @@ func (LiteralExpr) expr() {}
 
 type UnaryExpr struct {
 	Op token.Token
-	X  Expr
+	X  *Expr
 }
 
 func (UnaryExpr) node() {}
 func (UnaryExpr) expr() {}
 
 type BinaryExpr struct {
-	Left  Expr
+	Left  *Expr
 	Op    token.Token
-	Right Expr
+	Right *Expr
 }
 
 func (BinaryExpr) node() {}
@@ -62,10 +62,6 @@ func precedence(kind token.Kind) int {
 	default:
 		return Lowest
 	}
-}
-
-func exprPtr(expr Expr) *Expr {
-	return &expr
 }
 
 func (self *Parser) ParseExpr() *Expr {
@@ -89,10 +85,10 @@ func (self *Parser) parseExpr(pre int) *Expr {
 		self.next()
 		right := self.parseExpr(pred)
 
-		left = exprPtr(BinaryExpr{
-			Left:  *left,
+		left = ptr[Expr](BinaryExpr{
+			Left:  left,
 			Op:    op,
-			Right: *right,
+			Right: right,
 		})
 	}
 
@@ -105,9 +101,9 @@ func (self *Parser) parsePrefix() *Expr {
 		op := self.curTk
 		self.next()
 		x := self.parseExpr(Prefix)
-		return exprPtr(UnaryExpr{
+		return ptr[Expr](UnaryExpr{
 			Op: op,
-			X:  *x,
+			X:  x,
 		})
 
 	case token.INTEGER,
@@ -137,36 +133,37 @@ func (self *Parser) parsePrefix() *Expr {
 		tk := self.curTk
 		// TODO: report an error here for an unexpected expression token.
 		self.next()
-		return exprPtr(InvalidExpr{Token: tk})
+		return ptr[Expr](InvalidExpr{Token: tk})
 	}
 }
 
 func (self *Parser) parseLiteral() *Expr {
 	tk := self.curTk
 	self.next()
-	return exprPtr(LiteralExpr{Value: tk})
+	return ptr[Expr](LiteralExpr{Value: tk})
 }
 
 func (self *Parser) parseIdent() *Expr {
 	tk := self.curTk
 	self.next()
-	return exprPtr(IdentExpr{Name: tk})
+	return ptr[Expr](IdentExpr{Name: tk})
 }
 
 // Expr Call
 
 type Vaule struct {
-	Type  types.Type
-	Value string
+	Type       types.Type
+	Value      string // "" -> AccessAttr
+	AccessAttr *AccessAttr
 }
 
-type Call struct {
+type AccessAttr struct {
 	Path []string // db::sqlite()
-	Args []Arg
+	Args []*Expr  // Arg && Call db::sqlite(db::std::name())
 }
 
-func (Call) node() {}
-func (Call) expr() {}
+func (AccessAttr) node() {}
+func (AccessAttr) expr() {}
 
 type Arg struct {
 	Name  *string // nil -> ("string")
@@ -176,7 +173,122 @@ type Arg struct {
 func (Arg) node() {}
 func (Arg) expr() {}
 
-func (self *Parser) parseCall() *Call {
+func (self *Parser) parseAccessAttr() *AccessAttr {
+	if !self.match(token.IDENTIFIER) {
+		panic("The *Parser.parseAccessAttr function was used incorrectly.")
+	}
+
+	for !self.match(token.L_PAREN, token.EOF) {
+		if !self.match(token.IDENTIFIER) {
+			// todo error
+			return nil
+		}
+		aa := &AccessAttr{
+			Path: make([]string, 0),
+		}
+		aa.Path = append(aa.Path, string(self.curTk.Literal(&self.Lex.Input)))
+		self.next()
+
+		if !self.match(token.D_COLON) {
+			// todo error
+			return nil
+		}
+		self.next()
+
+		args := self.parseArgs()
+		aa.Args = argsToExprs(args)
+
+	}
 
 	return nil
+}
+
+func argsToExprs(args []*Arg) []*Expr {
+	exprs := make([]*Expr, 0, len(args))
+	for _, arg := range args {
+		exprs = append(exprs, ptr[Expr](arg))
+	}
+	return exprs
+}
+
+func (self *Parser) parseArgs() []*Arg {
+	if !self.match(token.L_PAREN) {
+		panic("The *Parser.parseArgs function was used incorrectly.")
+	}
+	self.next()
+
+	isComma := false
+	args := make([]*Arg, 0)
+
+	for !self.match(token.R_PAREN, token.EOF) {
+		if !isComma {
+			// todo error
+			return nil
+		} else {
+			isComma = false
+		}
+
+		if self.match(token.IDENTIFIER) && self.match_peek(token.COLON) {
+			tk := self.curTk
+			self.next().next()
+
+			if !self.match_group(token.G_LITERAL) {
+				arg := self.parseAccessAttr()
+				if arg == nil {
+					// todo error
+					return nil
+				}
+
+				args = append(args, &Arg{
+					Name: ptr(string(tk.Literal(&self.Lex.Input))),
+					Vaule: Vaule{
+						Type:       types.Expr,
+						Value:      "",
+						AccessAttr: arg,
+					},
+				})
+			}
+			args = append(args, &Arg{
+				Name: ptr(string(tk.Literal(&self.Lex.Input))),
+				Vaule: Vaule{
+					Type:       self.curTk.Kind.TypeFromKind(),
+					Value:      string(self.curTk.Literal(&self.Lex.Input)),
+					AccessAttr: nil,
+				},
+			})
+		} else if self.match(token.IDENTIFIER) && !self.match_peek(token.COLON) {
+			if !self.match_group(token.G_LITERAL) {
+				arg := self.parseAccessAttr()
+				if arg == nil {
+					// todo error
+					return nil
+				}
+
+				args = append(args, &Arg{
+					Name: nil,
+					Vaule: Vaule{
+						Type:       types.Expr,
+						Value:      "",
+						AccessAttr: arg,
+					},
+				})
+			}
+			args = append(args, &Arg{
+				Name: ptr(string(self.curTk.Literal(&self.Lex.Input))),
+				Vaule: Vaule{
+					Type:       self.curTk.Kind.TypeFromKind(),
+					Value:      string(self.curTk.Literal(&self.Lex.Input)),
+					AccessAttr: nil,
+				},
+			})
+		}
+
+		if self.match(token.COMMA) {
+			isComma = true
+			self.next()
+			continue
+		}
+	}
+
+	return args
 }

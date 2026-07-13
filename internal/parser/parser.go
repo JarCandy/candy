@@ -101,3 +101,8 @@ func (self *Parser) match_peek(kinds ...token.Kind) bool {
 	}
 	return false
 }
+
+// helpers func
+func ptr[T any](value T) *T {
+	return &value
+}

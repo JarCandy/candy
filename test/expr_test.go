@@ -18,7 +18,7 @@ func TestParseExprPrecedence(t *testing.T) {
 		t.Fatalf("expected root ADD, got %s", root.Op.Kind)
 	}
 
-	right, ok := root.Right.(parser.BinaryExpr)
+	right, ok := (*root.Right).(parser.BinaryExpr)
 	if !ok {
 		t.Fatalf("expected right BinaryExpr, got %T", root.Right)
 	}

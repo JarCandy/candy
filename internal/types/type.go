@@ -15,6 +15,8 @@ const (
 	Vec
 	Map
 
-	Declaration // enum, var, struct
-	Null        // null
+	Decl // enum, var, struct
+	Expr
+
+	Null // null
 )

@@ -329,8 +329,10 @@ func (self Kind) TypeFromKind() types.Type {
 		return types.Float
 	case IMAGINARY:
 		return types.Complex
-	case STRING, RAW_STRING, IDENTIFIER:
+	case STRING, RAW_STRING:
 		return types.String
+	case IDENTIFIER:
+		return types.Decl
 	default:
 		return types.Null
 	}
