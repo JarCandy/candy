@@ -1,16 +1,15 @@
-package test
+package lexer
 
 import (
 	"testing"
 
 	"github.com/CandyCrafts/candy/internal/parser/token"
 
-	"github.com/CandyCrafts/candy/internal/parser/lexer"
 	"github.com/k0kubun/pp"
 )
 
 func TestLexer(t *testing.T) {
-	lex := lexer.New([]byte(`
+	lex := New([]byte(`
 package::("main");
 
 use::(

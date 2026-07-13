@@ -1,16 +1,15 @@
-package test
+package parser
 
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/parser"
 	"github.com/CandyCrafts/candy/internal/parser/token"
 )
 
 func TestParseExprPrecedence(t *testing.T) {
-	expr := parser.New([]byte("1 + 2 * 3"), "expr.cm").ParseExpr()
+	expr := New([]byte("1 + 2 * 3"), "expr.cm").ParseExpr()
 
-	root, ok := (*expr).(parser.BinaryExpr)
+	root, ok := (*expr).(BinaryExpr)
 	if !ok {
 		t.Fatalf("expected BinaryExpr, got %T", expr)
 	}
@@ -18,7 +17,7 @@ func TestParseExprPrecedence(t *testing.T) {
 		t.Fatalf("expected root ADD, got %s", root.Op.Kind)
 	}
 
-	right, ok := (*root.Right).(parser.BinaryExpr)
+	right, ok := (*root.Right).(BinaryExpr)
 	if !ok {
 		t.Fatalf("expected right BinaryExpr, got %T", root.Right)
 	}
@@ -28,9 +27,9 @@ func TestParseExprPrecedence(t *testing.T) {
 }
 
 func TestParseExprPrefix(t *testing.T) {
-	expr := parser.New([]byte("-value"), "expr.cm").ParseExpr()
+	expr := New([]byte("-value"), "expr.cm").ParseExpr()
 
-	root, ok := (*expr).(parser.UnaryExpr)
+	root, ok := (*expr).(UnaryExpr)
 	if !ok {
 		t.Fatalf("expected UnaryExpr, got %T", expr)
 	}
