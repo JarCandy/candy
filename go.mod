@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	github.com/k0kubun/pp v2.4.0+incompatible
 	github.com/rp1s/colorista v0.0.0-20260708184842-4c40c097e1bc
+	github.com/rp1s/digreyt v0.0.0-20260715015800-e45b5ec0f059
 )
 
 require (
