@@ -2,12 +2,19 @@ package errors
 
 import (
 	"context"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/rp1s/digreyt/translate"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
 
 func TestErrorUsesSelectedLanguage(t *testing.T) {
 	translate.SetLanguage("ru")
@@ -40,20 +47,28 @@ func TestErrorFallsBackToEnglish(t *testing.T) {
 func TestErrorAutoTranslatesMissingLanguage(t *testing.T) {
 	prevLanguage := translate.Language()
 	prevTranslator := translate.AutoTranslatorProvider()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("langpair"); got != "en|candy" {
-			t.Errorf("expected MyMemory langpair en|candy, got %q", got)
-			http.Error(w, "bad langpair", http.StatusBadRequest)
-			return
-		}
-		text := r.URL.Query().Get("q")
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"responseData":{"translatedText":"en|candy:` + text + `"}}`))
-	}))
-	defer server.Close()
 
 	translator := translate.NewMyMemoryTranslator()
-	translator.Endpoint = server.URL
+	translator.Client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if got := req.URL.Query().Get("langpair"); got != "en|candy" {
+			t.Errorf("expected MyMemory langpair en|candy, got %q", got)
+			return &http.Response{
+				StatusCode: http.StatusBadRequest,
+				Status:     "400 Bad Request",
+				Body:       io.NopCloser(strings.NewReader(`{"responseData":{"translatedText":""}}`)),
+				Header:     make(http.Header),
+				Request:    req,
+			}, nil
+		}
+		text := req.URL.Query().Get("q")
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(`{"responseData":{"translatedText":"en|candy:` + text + `"}}`)),
+			Header:     make(http.Header),
+			Request:    req,
+		}, nil
+	})}
 
 	translate.SetLanguage("candy")
 	translate.SetAutoTranslator(translator)

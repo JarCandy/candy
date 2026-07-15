@@ -32,9 +32,6 @@ const (
 	PACKAGE // package
 	USE     // use
 
-	IMPL  // impl a keyword for cross-platform compiler operation
-	MODEL // model a keyword for cross-platform compiler operation
-
 	PUB // pub
 	LET // let
 
@@ -206,8 +203,6 @@ var keywords = map[string]Kind{
 	"package": PACKAGE,
 	"use":     USE,
 	"pub":     PUB,
-	"impl":    IMPL,
-	"model":   MODEL,
 	"let":     LET,
 	"true":    TRUE,
 	"false":   FALSE,
@@ -254,10 +249,6 @@ func (self Kind) String() string {
 		return "PACKAGE"
 	case USE:
 		return "USE"
-	case IMPL:
-		return "IMPL"
-	case MODEL:
-		return "MODEL"
 	case PUB:
 		return "PUB"
 	case LET:

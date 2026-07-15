@@ -260,7 +260,7 @@ func (self *Parser) parseAttr() *Attr {
 }
 
 func (self *Parser) matchAttrPathSegment() bool {
-	return self.match(token.IDENTIFIER, token.PACKAGE, token.USE, token.IMPL, token.MODEL, token.LET, token.PUB)
+	return self.match(token.IDENTIFIER, token.PACKAGE, token.USE, token.LET, token.PUB)
 }
 
 func (self *Parser) parseAttrAssignmentValue() (*Expr, bool) {

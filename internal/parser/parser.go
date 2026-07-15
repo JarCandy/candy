@@ -74,13 +74,8 @@ func (self *Parser) Run() (*AST, error) {
 				ast.Decls = append(ast.Decls, &LetDecl{Let: decl})
 			}
 		case token.IDENTIFIER:
-			if self.match_peek(token.D_COLON) {
-				if decl := self.parseQualifiedDecl(); decl != nil {
-					ast.Decls = append(ast.Decls, decl)
-				}
-			} else {
-				self.report(candyerrors.ParserUnexpectedTopLevel(span(self.curTk)))
-				self.synchronizeTopLevel()
+			if decl := self.parseQualifiedDecl(); decl != nil {
+				ast.Decls = append(ast.Decls, decl)
 			}
 		case token.ATTR_S:
 			if attrs := self.parseAttrs(); attrs != nil {

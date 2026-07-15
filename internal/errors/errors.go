@@ -379,8 +379,8 @@ func ParserUseClosingParen(span Span) Error {
 func ParserDeclKind(span Span) Error {
 	return parsingError(
 		span,
-		text("Expected model or impl declaration", "Ожидалось объявление model или impl"),
-		text("a qualified declaration must look like go::model or go::impl", "квалифицированное объявление должно выглядеть как go::model или go::impl"),
+		text("Expected qualified declaration path", "Ожидался путь квалифицированного объявления"),
+		text("a qualified declaration must look like module::item Name { ... }", "квалифицированное объявление должно выглядеть как module::item Name { ... }"),
 	)
 }
 

@@ -55,27 +55,16 @@ func (n AttrsDecl) Token() token.Token {
 	return n.Attrs.Token()
 }
 
-type ModelDecl struct {
+type QualifiedDecl struct {
 	Tok  token.Token
 	Path []token.Token
 	Name token.Token
 	Body []Stmt
 }
 
-func (ModelDecl) node()                {}
-func (ModelDecl) decl()                {}
-func (n ModelDecl) Token() token.Token { return n.Tok }
-
-type ImplDecl struct {
-	Tok  token.Token
-	Path []token.Token
-	Name token.Token
-	Body []Stmt
-}
-
-func (ImplDecl) node()                {}
-func (ImplDecl) decl()                {}
-func (n ImplDecl) Token() token.Token { return n.Tok }
+func (QualifiedDecl) node()                {}
+func (QualifiedDecl) decl()                {}
+func (n QualifiedDecl) Token() token.Token { return n.Tok }
 
 func (self *Parser) parsePackage() *Package {
 	if !self.match(token.PACKAGE) {
@@ -240,7 +229,7 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 }
 
 func (self *Parser) parseQualifiedDecl() Decl {
-	path, kindTk, ok := self.parseQualifiedDeclPath()
+	path, ok := self.parseQualifiedDeclPath()
 	if !ok {
 		return nil
 	}
@@ -254,21 +243,14 @@ func (self *Parser) parseQualifiedDecl() Decl {
 	self.next()
 
 	body := self.parseDeclBody()
-	switch kindTk.Kind {
-	case token.MODEL:
-		return &ModelDecl{Tok: kindTk, Path: path, Name: name, Body: body}
-	case token.IMPL:
-		return &ImplDecl{Tok: kindTk, Path: path, Name: name, Body: body}
-	default:
-		return nil
-	}
+	return &QualifiedDecl{Tok: path[0], Path: path, Name: name, Body: body}
 }
 
-func (self *Parser) parseQualifiedDeclPath() ([]token.Token, token.Token, bool) {
+func (self *Parser) parseQualifiedDeclPath() ([]token.Token, bool) {
 	if !self.match(token.IDENTIFIER) {
 		self.report(candyerrors.ParserDeclKind(span(self.curTk)))
 		self.synchronizeTopLevel()
-		return nil, token.Token{}, false
+		return nil, false
 	}
 
 	path := []token.Token{self.curTk}
@@ -276,24 +258,16 @@ func (self *Parser) parseQualifiedDeclPath() ([]token.Token, token.Token, bool) 
 
 	for self.match(token.D_COLON) {
 		self.next()
-		if self.match(token.MODEL, token.IMPL) {
-			kindTk := self.curTk
-			path = append(path, kindTk)
-			self.next()
-			return path, kindTk, true
-		}
 		if !self.match(token.IDENTIFIER) {
 			self.report(candyerrors.ParserDeclKind(span(self.curTk)))
 			self.synchronizeTopLevel()
-			return nil, token.Token{}, false
+			return nil, false
 		}
 		path = append(path, self.curTk)
 		self.next()
 	}
 
-	self.report(candyerrors.ParserDeclKind(span(self.curTk)))
-	self.synchronizeTopLevel()
-	return nil, token.Token{}, false
+	return path, true
 }
 
 func (self *Parser) parseDeclBody() []Stmt {

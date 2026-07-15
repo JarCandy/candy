@@ -770,9 +770,9 @@ go::impl User {
 		t.Fatal("expected lang attr map entry")
 	}
 
-	model, ok := ast.Decls[4].(*ModelDecl)
+	model, ok := ast.Decls[4].(*QualifiedDecl)
 	if !ok {
-		t.Fatalf("expected model decl, got %T", ast.Decls[4])
+		t.Fatalf("expected qualified model decl, got %T", ast.Decls[4])
 	}
 	if literal(p, model.Name) != "User" {
 		t.Fatalf("expected model name User, got %q", literal(p, model.Name))
@@ -794,9 +794,12 @@ go::impl User {
 		t.Fatalf("expected default attr expr, got %T", *field.Defualt)
 	}
 
-	impl, ok := ast.Decls[6].(*ImplDecl)
+	impl, ok := ast.Decls[6].(*QualifiedDecl)
 	if !ok {
-		t.Fatalf("expected impl decl, got %T", ast.Decls[6])
+		t.Fatalf("expected qualified impl decl, got %T", ast.Decls[6])
+	}
+	if got := tokenLiterals(p, impl.Path); !equalStrings(got, []string{"go", "impl"}) {
+		t.Fatalf("expected impl path [go impl], got %#v", got)
 	}
 	if len(impl.Body) != 2 {
 		t.Fatalf("expected 2 impl statements, got %d", len(impl.Body))
@@ -832,9 +835,9 @@ func TestRunParsesPubMemberGroupInModel(t *testing.T) {
 	if len(ast.Decls) != 1 {
 		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
 	}
-	model, ok := ast.Decls[0].(*ModelDecl)
+	model, ok := ast.Decls[0].(*QualifiedDecl)
 	if !ok {
-		t.Fatalf("expected model decl, got %T", ast.Decls[0])
+		t.Fatalf("expected qualified model decl, got %T", ast.Decls[0])
 	}
 	if len(model.Body) != 2 {
 		t.Fatalf("expected 2 model fields, got %d", len(model.Body))
@@ -847,6 +850,77 @@ func TestRunParsesPubMemberGroupInModel(t *testing.T) {
 		if let.Let == nil || !let.Let.Pub {
 			t.Fatalf("expected body %d to be public let, got %#v", i, let.Let)
 		}
+	}
+}
+
+func TestRunParsesSingleTokenQualifiedDeclPath(t *testing.T) {
+	p := New([]byte(`model User {
+    pub (
+        name: type = expr,
+    )
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 1 {
+		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
+	}
+	decl, ok := ast.Decls[0].(*QualifiedDecl)
+	if !ok {
+		t.Fatalf("expected qualified decl, got %T", ast.Decls[0])
+	}
+	if got := tokenLiterals(p, decl.Path); !equalStrings(got, []string{"model"}) {
+		t.Fatalf("expected path [model], got %#v", got)
+	}
+	if literal(p, decl.Name) != "User" {
+		t.Fatalf("expected decl name User, got %q", literal(p, decl.Name))
+	}
+	if len(decl.Body) != 1 {
+		t.Fatalf("expected 1 body stmt, got %d", len(decl.Body))
+	}
+}
+
+func TestRunParsesPubMemberGroupWithTrailingComma(t *testing.T) {
+	p := New([]byte(`go::model Name {
+    pub (
+        name: type = expr,
+    )
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 1 {
+		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
+	}
+	decl, ok := ast.Decls[0].(*QualifiedDecl)
+	if !ok {
+		t.Fatalf("expected qualified model decl, got %T", ast.Decls[0])
+	}
+	if literal(p, decl.Name) != "Name" {
+		t.Fatalf("expected model name Name, got %q", literal(p, decl.Name))
+	}
+	if got := tokenLiterals(p, decl.Path); !equalStrings(got, []string{"go", "model"}) {
+		t.Fatalf("expected model path [go model], got %#v", got)
+	}
+	if len(decl.Body) != 1 {
+		t.Fatalf("expected 1 model field, got %d", len(decl.Body))
+	}
+	field, ok := decl.Body[0].(*LetStmt)
+	if !ok {
+		t.Fatalf("expected model field let stmt, got %T", decl.Body[0])
+	}
+	if field.Let == nil || !field.Let.Pub {
+		t.Fatalf("expected public model field, got %#v", field.Let)
+	}
+	if literal(p, field.Name) != "name" {
+		t.Fatalf("expected field name, got %q", literal(p, field.Name))
+	}
+	if p.Diagnostics.HasFatalErrors() {
+		t.Fatalf("expected no fatal diagnostics, got %v", p.Diagnostics)
 	}
 }
 
