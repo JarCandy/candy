@@ -7,7 +7,6 @@ import (
 
 type Package struct {
 	Tok  token.Token
-	Name token.Token
 	Args []*Expr
 }
 
@@ -61,7 +60,6 @@ func (self *Parser) parsePackage() *Package {
 		return nil
 	}
 	tk := self.curTk
-	self.curTk.Kind = token.IDENTIFIER // so that the function *Parser.parseAttr eats everything correctly
 	attr := self.parseAttr()
 	if attr == nil {
 		return nil
@@ -79,7 +77,7 @@ func (self *Parser) parsePackage() *Package {
 	} else if !self.match(token.EOF) {
 		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
-	return &Package{Tok: tk, Name: attr.Path[0], Args: attr.Args}
+	return &Package{Tok: tk, Args: attr.Args}
 }
 
 func (self *Parser) parseUse() *Use {

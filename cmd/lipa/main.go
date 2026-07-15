@@ -8,6 +8,13 @@ import (
 	"github.com/rp1s/lipa"
 )
 
+type ParserView struct {
+	File        string
+	AST         any
+	Diagnostics any
+	Source      string
+}
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -16,7 +23,7 @@ func main() {
 }
 
 func run() error {
-	fileName := "examples/models/1-model.cm"
+	fileName := "examples/models/2-model.cm"
 	if len(os.Args) > 1 {
 		fileName = os.Args[1]
 	}
@@ -28,36 +35,31 @@ func run() error {
 
 	p := parser.New(source, fileName)
 	ast, parseErr := p.Run()
+	diagnostics := append([]any(nil), diagnosticsSnapshot(p.Diagnostics.Errors)...)
 	if parseErr != nil {
 		p.Diagnostics.Print(os.Stderr)
 	}
 
-	options := []lipa.Option{
-		lipa.WithTitle("Candy AST: " + fileName),
-		lipa.WithSource(string(source)),
-		lipa.WithHiddenFields(
-			"Tok",
-			"Tok_s",
-			"Tok_e",
-			"Kind",
-			"Pos",
-			"Start",
-			"End",
-			"FileName",
-			"Line",
-			"Column",
-			"Offset",
-		),
-	}
+	options := []lipa.Option{lipa.WithTitle("Candy Parser Tree")}
 	if outputPath := os.Getenv("LIPA_OUT"); outputPath != "" {
 		options = append(options, lipa.WithOutputPath(outputPath))
 	}
 	if os.Getenv("LIPA_NO_OPEN") != "" {
 		options = append(options, lipa.WithoutOpen())
 	}
-	if os.Getenv("LIPA_SHOW_HIDDEN") != "" {
-		options = append(options, lipa.WithShowHidden())
-	}
 
-	return lipa.View(ast, options...)
+	return lipa.View(ParserView{
+		File:        fileName,
+		AST:         ast,
+		Diagnostics: diagnostics,
+		Source:      string(source),
+	}, options...)
+}
+
+func diagnosticsSnapshot[T any](items []T) []any {
+	values := make([]any, 0, len(items))
+	for i := range items {
+		values = append(values, items[i])
+	}
+	return values
 }

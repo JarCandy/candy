@@ -195,7 +195,7 @@ func (n Arg) Token() token.Token { return n.Tok }
 // works only with IDENTIFIER
 // eats all the tokens, you get a new one in the parser state
 func (self *Parser) parseAttr() *Attr {
-	if !self.match(token.IDENTIFIER) {
+	if !self.match(token.IDENTIFIER, token.PACKAGE) {
 		self.report(candyerrors.ParserAttrStart(span(self.curTk)))
 		return nil
 	}
@@ -206,7 +206,7 @@ func (self *Parser) parseAttr() *Attr {
 	}
 
 	for !self.match(token.R_PAREN, token.COMMA, token.ATTR_E, token.EOF) {
-		if !self.match(token.IDENTIFIER) {
+		if !self.match(token.IDENTIFIER, token.PACKAGE) {
 			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
 			self.synchronizeArgs()
 			return nil

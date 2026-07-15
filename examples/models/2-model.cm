@@ -1,0 +1,5 @@
+package("main");
+
+use (
+    "github.com/CandyCrafts/plugins/db" -> d, // import NEW db
+)
