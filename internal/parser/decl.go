@@ -30,6 +30,19 @@ func (Use) node()                {}
 func (Use) decl()                {}
 func (n Use) Token() token.Token { return n.Tok }
 
+type LetDecl struct {
+	*Let
+}
+
+func (LetDecl) node() {}
+func (LetDecl) decl() {}
+func (n LetDecl) Token() token.Token {
+	if n.Let == nil {
+		return token.Token{}
+	}
+	return n.Let.Token()
+}
+
 func (self *Parser) parsePackage() *Package {
 	if !self.match(token.PACKAGE) {
 		return nil

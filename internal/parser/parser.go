@@ -63,11 +63,11 @@ func (self *Parser) Run() (*AST, error) {
 			if decl := self.parseUse(); decl != nil {
 				ast.Decls = append(ast.Decls, decl)
 			}
+		case token.PUB, token.LET:
+			if decl := self.parseLetVar(); decl != nil {
+				ast.Decls = append(ast.Decls, &LetDecl{Let: decl})
+			}
 		case token.IDENTIFIER:
-			self.next()
-		case token.PUB:
-			self.next()
-		case token.LET:
 			self.next()
 		case token.ATTR_S:
 			self.next()
@@ -152,23 +152,5 @@ func (self *Parser) synchronizeUse() {
 			return
 		}
 		self.next()
-	}
-}
-
-// helpers func
-func ptr[T any](value T) *T {
-	return &value
-}
-
-func span(tk token.Token) candyerrors.Span {
-	return candyerrors.Span{
-		Start: tk.Start,
-		End:   tk.End,
-		Pos: candyerrors.Position{
-			FileName: tk.Pos.FileName,
-			Line:     tk.Pos.Line,
-			Column:   tk.Pos.Column,
-			Offset:   tk.Pos.Offset,
-		},
 	}
 }

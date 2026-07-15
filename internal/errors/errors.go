@@ -238,6 +238,55 @@ func ParserAttrStart(span Span) Error {
 	)
 }
 
+func ParserTypeStart(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected type path", "Ожидался путь типа"),
+		text("a type must start with an identifier", "тип должен начинаться с идентификатора"),
+	)
+}
+
+func ParserTypePathSegment(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected type path segment", "Ожидался сегмент пути типа"),
+		text("expected an identifier after '::' in the type path", "после '::' в пути типа ожидался идентификатор"),
+		text("a type path must look like Type or module::Type", "путь типа должен выглядеть как Type или module::Type"),
+	)
+}
+
+func ParserLetStart(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected let declaration", "Ожидалось объявление let"),
+		text("a variable declaration must start with 'let' or 'pub let'", "объявление переменной должно начинаться с 'let' или 'pub let'"),
+	)
+}
+
+func ParserLetName(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected variable name", "Ожидалось имя переменной"),
+		text("after 'let', expected an identifier variable name", "после 'let' ожидался идентификатор имени переменной"),
+	)
+}
+
+func ParserLetBody(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected variable type or value", "Ожидался тип или значение переменной"),
+		text("after the variable name, expected ': Type', '= value', or both", "после имени переменной ожидалось ': Type', '= value' или оба элемента"),
+	)
+}
+
+func ParserLetValue(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected variable value", "Ожидалось значение переменной"),
+		text("after '=', expected an expression for the variable value", "после '=' ожидалось выражение значения переменной"),
+	)
+}
+
 func ParserArgsStart(span Span) Error {
 	return parsingError(
 		span,

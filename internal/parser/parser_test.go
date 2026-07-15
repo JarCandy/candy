@@ -369,6 +369,184 @@ func TestParseUseReportsEOFAfterAliasArrow(t *testing.T) {
 	}
 }
 
+func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
+	p := New([]byte(`pub let name: db::User = "Candy";`), "test.cm")
+	decl := p.parseLetVar()
+
+	if decl == nil {
+		t.Fatal("expected let decl, got nil")
+	}
+	if !decl.Pub {
+		t.Fatal("expected public let")
+	}
+	if literal(p, decl.Name) != "name" {
+		t.Fatalf("expected name token, got %q", literal(p, decl.Name))
+	}
+
+	typ, ok := decl.Type.(*TypeExpr)
+	if !ok {
+		t.Fatalf("expected *TypeExpr, got %T", decl.Type)
+	}
+	if got := tokenLiterals(p, typ.Path); !equalStrings(got, []string{"db", "User"}) {
+		t.Fatalf("expected type path [db User], got %#v", got)
+	}
+	if decl.Defualt == nil {
+		t.Fatal("expected default expr")
+	}
+	value, ok := (*decl.Defualt).(LiteralExpr)
+	if !ok {
+		t.Fatalf("expected literal default, got %T", *decl.Defualt)
+	}
+	if literal(p, value.Value) != "Candy" {
+		t.Fatalf("expected default Candy, got %q", literal(p, value.Value))
+	}
+	if p.curTk.Kind != token.EOF {
+		t.Fatalf("expected EOF after semicolon, got %s", p.curTk.Kind)
+	}
+}
+
+func TestParseLetVarWithTypeOnly(t *testing.T) {
+	p := New([]byte(`let name: User`), "test.cm")
+	decl := p.parseLetVar()
+
+	if decl == nil {
+		t.Fatal("expected let decl, got nil")
+	}
+	if decl.Pub {
+		t.Fatal("expected private let")
+	}
+	if decl.Type == nil {
+		t.Fatal("expected type")
+	}
+	if decl.Defualt != nil {
+		t.Fatalf("expected nil default, got %#v", decl.Defualt)
+	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no diagnostics, got %d", len(p.Diagnostics.Errors))
+	}
+}
+
+func TestParseLetVarWithDefaultOnly(t *testing.T) {
+	p := New([]byte(`let name = 10`), "test.cm")
+	decl := p.parseLetVar()
+
+	if decl == nil {
+		t.Fatal("expected let decl, got nil")
+	}
+	if decl.Type != nil {
+		t.Fatalf("expected nil type, got %#v", decl.Type)
+	}
+	if decl.Defualt == nil {
+		t.Fatal("expected default expr")
+	}
+}
+
+func TestParseLetVarReportsMissingName(t *testing.T) {
+	p := New([]byte(`let : User`), "test.cm")
+	decl := p.parseLetVar()
+
+	if decl != nil {
+		t.Fatalf("expected nil let decl, got %#v", decl)
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected variable name" {
+		t.Fatalf("expected variable name diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestParseLetVarReportsMissingBody(t *testing.T) {
+	p := New([]byte(`let name`), "test.cm")
+	decl := p.parseLetVar()
+
+	if decl == nil {
+		t.Fatal("expected partial let decl, got nil")
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected variable type or value" {
+		t.Fatalf("expected let body diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestParseLetVarReportsMissingDefaultValue(t *testing.T) {
+	p := New([]byte(`let name = ;`), "test.cm")
+	decl := p.parseLetVar()
+
+	if decl == nil {
+		t.Fatal("expected partial let decl, got nil")
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected variable value" {
+		t.Fatalf("expected let value diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestRunParsesLetDeclarations(t *testing.T) {
+	p := New([]byte(`pub let name: User = "Candy"`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 1 {
+		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
+	}
+	decl, ok := ast.Decls[0].(*LetDecl)
+	if !ok {
+		t.Fatalf("expected *LetDecl decl, got %T", ast.Decls[0])
+	}
+	if decl.Let == nil {
+		t.Fatal("expected let payload")
+	}
+	if !decl.Let.Pub {
+		t.Fatal("expected public let")
+	}
+}
+
+func TestParseLetStmt(t *testing.T) {
+	p := New([]byte(`let name: User = "Candy"`), "test.cm")
+	stmt := p.parseLetStmt()
+
+	if stmt == nil {
+		t.Fatal("expected let stmt, got nil")
+	}
+	if stmt.Let == nil {
+		t.Fatal("expected let payload")
+	}
+	if stmt.Let.Pub {
+		t.Fatal("expected private let stmt")
+	}
+	if literal(p, stmt.Let.Name) != "name" {
+		t.Fatalf("expected name token, got %q", literal(p, stmt.Let.Name))
+	}
+	if stmt.Let.Type == nil {
+		t.Fatal("expected let stmt type")
+	}
+	if stmt.Let.Defualt == nil {
+		t.Fatal("expected let stmt default")
+	}
+}
+
+func TestParseLetStmtRejectsPub(t *testing.T) {
+	p := New([]byte(`pub let name: User`), "test.cm")
+	stmt := p.parseLetStmt()
+
+	if stmt != nil {
+		t.Fatalf("expected nil let stmt, got %#v", stmt)
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected let declaration" {
+		t.Fatalf("expected let start diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
 func TestRunDoesNotFailOnWarningsOnly(t *testing.T) {
 	p := New([]byte(`package use ("github.com/CandyCrafts/plugins/db")`), "test.cm")
 	_, err := p.Run()
