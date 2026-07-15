@@ -1,5 +1,5 @@
 APP ?= candy
-PKG ?= ./cmd
+PKG ?= ./cmd/release
 BIN_DIR ?= bin
 LDFLAGS ?=
 MACOS_PLATFORMS ?= darwin/amd64 darwin/arm64
