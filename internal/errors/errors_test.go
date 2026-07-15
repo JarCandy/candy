@@ -2,16 +2,12 @@ package errors
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/rp1s/digreyt/translate"
 )
-
-type fakeAutoTranslator struct{}
-
-func (fakeAutoTranslator) Translate(_ context.Context, sourceLanguage, targetLanguage, text string) (string, error) {
-	return sourceLanguage + "->" + targetLanguage + ":" + text, nil
-}
 
 func TestErrorUsesSelectedLanguage(t *testing.T) {
 	translate.SetLanguage("ru")
@@ -44,8 +40,23 @@ func TestErrorFallsBackToEnglish(t *testing.T) {
 func TestErrorAutoTranslatesMissingLanguage(t *testing.T) {
 	prevLanguage := translate.Language()
 	prevTranslator := translate.AutoTranslatorProvider()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("langpair"); got != "en|candy" {
+			t.Errorf("expected MyMemory langpair en|candy, got %q", got)
+			http.Error(w, "bad langpair", http.StatusBadRequest)
+			return
+		}
+		text := r.URL.Query().Get("q")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"responseData":{"translatedText":"en|candy:` + text + `"}}`))
+	}))
+	defer server.Close()
+
+	translator := translate.NewMyMemoryTranslator()
+	translator.Endpoint = server.URL
+
 	translate.SetLanguage("candy")
-	translate.SetAutoTranslator(fakeAutoTranslator{})
+	translate.SetAutoTranslator(translator)
 	defer func() {
 		translate.SetLanguage(prevLanguage)
 		translate.SetAutoTranslator(prevTranslator)
@@ -57,10 +68,10 @@ func TestErrorAutoTranslatesMissingLanguage(t *testing.T) {
 		t.Fatalf("LocalizeAuto() failed: %v", translateErr)
 	}
 
-	if localized.Message != "eng->candy:parse error" {
+	if localized.Message != "en|candy:parse error" {
 		t.Fatalf("expected auto-translated message, got %q", localized.Message)
 	}
-	if localized.Arrow != "eng->candy:Expected argument value" {
+	if localized.Arrow != "en|candy:Expected argument value" {
 		t.Fatalf("expected auto-translated arrow, got %q", localized.Arrow)
 	}
 }

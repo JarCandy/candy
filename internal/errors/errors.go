@@ -376,6 +376,78 @@ func ParserUseClosingParen(span Span) Error {
 	)
 }
 
+func ParserDeclKind(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected model or impl declaration", "Ожидалось объявление model или impl"),
+		text("a qualified declaration must look like go::model or go::impl", "квалифицированное объявление должно выглядеть как go::model или go::impl"),
+	)
+}
+
+func ParserDeclName(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected declaration name", "Ожидалось имя объявления"),
+		text("after model or impl, expected an identifier name", "после model или impl ожидался идентификатор имени"),
+	)
+}
+
+func ParserDeclBodyStart(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected declaration body", "Ожидалось тело объявления"),
+		text("a model or impl declaration must continue with '{'", "объявление model или impl должно продолжаться символом '{'"),
+	)
+}
+
+func ParserDeclBodyClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing declaration body", "Ожидалось закрытие тела объявления"),
+		text("a model or impl body must end with '}'", "тело model или impl должно завершаться символом '}'"),
+	)
+}
+
+func ParserUnexpectedBlockToken(span Span) Error {
+	return parsingError(
+		span,
+		text("Unexpected block token", "Неожиданный токен в блоке"),
+		text("expected an attribute, field, method, or closing brace", "ожидался атрибут, поле, метод или закрывающая скобка"),
+	)
+}
+
+func ParserMemberName(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected member name", "Ожидалось имя элемента"),
+		text("after pub or let, expected a field or method name", "после pub или let ожидалось имя поля или метода"),
+	)
+}
+
+func ParserMethodReturn(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected method return type", "Ожидался возвращаемый тип метода"),
+		text("after method arguments, expected '-> Type'", "после аргументов метода ожидалось '-> Type'"),
+	)
+}
+
+func ParserPubGroupStart(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected public group", "Ожидалась публичная группа"),
+		text("after pub, expected '(' to start grouped declarations", "после pub ожидался символ '(' для группы объявлений"),
+	)
+}
+
+func ParserPubGroupClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing public group", "Ожидалось закрытие публичной группы"),
+		text("a pub group must end with ')'", "группа pub должна завершаться символом ')'"),
+	)
+}
+
 func lexerIllegal(span Span, arrow translate.Translations, description ...translate.Translations) Error {
 	return diagnostic(Errors[lexerIllegalIndex], span, arrow, description...)
 }

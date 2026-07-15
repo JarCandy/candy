@@ -55,6 +55,7 @@ type Attrs struct {
 	Tok_e token.Token // ATTR_E
 
 	Attrs []*Attr
+	Map   map[string]*Attr
 }
 
 func (Attrs) node()                  {}
@@ -64,22 +65,22 @@ func (n Attrs) Token_e() token.Token { return n.Tok_e }
 
 func (self *Parser) parseLetVar(letKw bool) *Let {
 	pub := false
+	tk := self.curTk
 
 	if self.match(token.PUB) {
 		pub = true
+		tk = self.curTk
 		self.next()
 	}
 
-	if !self.match(token.LET) {
-		if letKw {
-			self.report(candyerrors.ParserLetStart(span(self.curTk)))
-			self.synchronizeTopLevel()
-			return nil
-		}
+	if self.match(token.LET) {
+		tk = self.curTk
+		self.next()
+	} else if letKw {
+		self.report(candyerrors.ParserLetStart(span(self.curTk)))
+		self.synchronizeTopLevel()
+		return nil
 	}
-
-	tk := self.curTk
-	self.next()
 
 	if !self.match(token.IDENTIFIER) {
 		self.report(candyerrors.ParserLetName(span(self.curTk)))
@@ -111,7 +112,7 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 	if self.match(token.ASSIGN) {
 		hasDefault = true
 		self.next()
-		if self.match(token.END, token.EOF) {
+		if self.match(token.END, token.COMMA, token.R_PAREN, token.R_BRACE, token.EOF) {
 			self.report(candyerrors.ParserLetValue(span(self.curTk)))
 		} else {
 			decl.Defualt = self.ParseExpr()
@@ -124,7 +125,7 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 
 	if self.match(token.END) {
 		self.next()
-	} else if !self.match(token.EOF) {
+	} else if !self.match(token.R_PAREN, token.R_BRACE, token.COMMA, token.EOF) {
 		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
 
@@ -140,6 +141,7 @@ func (self *Parser) parseAttrs() *Attrs {
 	attrs := &Attrs{
 		Tok_s: self.curTk,
 		Attrs: make([]*Attr, 0),
+		Map:   make(map[string]*Attr),
 	}
 	self.next()
 
@@ -158,6 +160,7 @@ func (self *Parser) parseAttrs() *Attrs {
 			continue
 		}
 		attrs.Attrs = append(attrs.Attrs, attr)
+		self.addAttrToMap(attrs, attr)
 
 		if self.match(token.COMMA) {
 			self.next()
@@ -188,6 +191,13 @@ func (self *Parser) parseAttrs() *Attrs {
 
 	return attrs
 
+}
+
+func (self *Parser) addAttrToMap(attrs *Attrs, attr *Attr) {
+	if attrs == nil || attr == nil || attr.Value == nil || len(attr.Path) == 0 {
+		return
+	}
+	attrs.Map[self.tokenText(attr.Path[0])] = attr
 }
 
 // helpers func

@@ -63,12 +63,25 @@ func (self *Parser) Run() (*AST, error) {
 			if decl := self.parseUse(); decl != nil {
 				ast.Decls = append(ast.Decls, decl)
 			}
-		case token.PUB, token.LET:
+		case token.PUB:
+			if self.match_peek(token.L_PAREN) {
+				ast.Decls = append(ast.Decls, self.parsePubDeclGroup()...)
+			} else if decl := self.parseLetVar(true); decl != nil {
+				ast.Decls = append(ast.Decls, &LetDecl{Let: decl})
+			}
+		case token.LET:
 			if decl := self.parseLetVar(true); decl != nil {
 				ast.Decls = append(ast.Decls, &LetDecl{Let: decl})
 			}
 		case token.IDENTIFIER:
-			self.next()
+			if self.match_peek(token.D_COLON) {
+				if decl := self.parseQualifiedDecl(); decl != nil {
+					ast.Decls = append(ast.Decls, decl)
+				}
+			} else {
+				self.report(candyerrors.ParserUnexpectedTopLevel(span(self.curTk)))
+				self.synchronizeTopLevel()
+			}
 		case token.ATTR_S:
 			if attrs := self.parseAttrs(); attrs != nil {
 				ast.Decls = append(ast.Decls, &AttrsDecl{Attrs: attrs})
@@ -123,14 +136,29 @@ func (self *Parser) match_peek(kinds ...token.Kind) bool {
 	return false
 }
 
+func (self *Parser) tokenText(tk token.Token) string {
+	return string(tk.Literal(&self.Lex.Input))
+}
+
 func (self *Parser) synchronizeTopLevel() {
 	self.next()
 	for self.curTk.Kind != token.EOF {
 		switch self.curTk.Kind {
-		case token.PACKAGE, token.USE, token.PUB, token.LET, token.ATTR_S:
+		case token.PACKAGE, token.USE, token.PUB, token.LET, token.ATTR_S, token.IDENTIFIER:
 			return
 		case token.R_BRACE, token.END:
 			self.next()
+			return
+		}
+		self.next()
+	}
+}
+
+func (self *Parser) synchronizeBlock() {
+	self.next()
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.ATTR_S, token.PUB, token.LET, token.IDENTIFIER, token.R_PAREN, token.R_BRACE, token.END, token.COMMA:
 			return
 		}
 		self.next()
@@ -161,6 +189,17 @@ func (self *Parser) synchronizeUse() {
 	for self.curTk.Kind != token.EOF {
 		switch self.curTk.Kind {
 		case token.COMMA, token.R_PAREN:
+			return
+		}
+		self.next()
+	}
+}
+
+func (self *Parser) synchronizePubGroup() {
+	self.next()
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.PUB, token.LET, token.COMMA, token.END, token.R_PAREN:
 			return
 		}
 		self.next()

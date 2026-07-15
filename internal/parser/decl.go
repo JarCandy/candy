@@ -55,6 +55,28 @@ func (n AttrsDecl) Token() token.Token {
 	return n.Attrs.Token()
 }
 
+type ModelDecl struct {
+	Tok  token.Token
+	Path []token.Token
+	Name token.Token
+	Body []Stmt
+}
+
+func (ModelDecl) node()                {}
+func (ModelDecl) decl()                {}
+func (n ModelDecl) Token() token.Token { return n.Tok }
+
+type ImplDecl struct {
+	Tok  token.Token
+	Path []token.Token
+	Name token.Token
+	Body []Stmt
+}
+
+func (ImplDecl) node()                {}
+func (ImplDecl) decl()                {}
+func (n ImplDecl) Token() token.Token { return n.Tok }
+
 func (self *Parser) parsePackage() *Package {
 	if !self.match(token.PACKAGE) {
 		return nil
@@ -162,4 +184,154 @@ func (self *Parser) parseUseImport() (UseImport, bool) {
 	}
 
 	return item, true
+}
+
+func (self *Parser) parsePubDeclGroup() []Decl {
+	if !self.match(token.PUB) {
+		return nil
+	}
+
+	decls := make([]Decl, 0)
+	self.next()
+
+	if !self.match(token.L_PAREN) {
+		self.report(candyerrors.ParserPubGroupStart(span(self.curTk)))
+		self.synchronizeTopLevel()
+		return decls
+	}
+	self.next()
+
+	for !self.match(token.R_PAREN, token.EOF) {
+		if self.match(token.COMMA, token.END) {
+			self.next()
+			continue
+		}
+
+		if !self.match(token.PUB, token.LET) {
+			self.report(candyerrors.ParserLetStart(span(self.curTk)))
+			self.synchronizePubGroup()
+			continue
+		}
+
+		let := self.parseLetVar(true)
+		if let != nil {
+			let.Pub = true
+			decls = append(decls, &LetDecl{Let: let})
+		}
+
+		if self.match(token.COMMA, token.END) {
+			self.next()
+		}
+	}
+
+	if self.match(token.R_PAREN) {
+		self.next()
+	} else {
+		self.report(candyerrors.ParserPubGroupClosing(span(self.curTk)))
+	}
+
+	if self.match(token.END) {
+		self.next()
+	} else if !self.match(token.EOF) {
+		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
+	}
+
+	return decls
+}
+
+func (self *Parser) parseQualifiedDecl() Decl {
+	path, kindTk, ok := self.parseQualifiedDeclPath()
+	if !ok {
+		return nil
+	}
+
+	if !self.match(token.IDENTIFIER) {
+		self.report(candyerrors.ParserDeclName(span(self.curTk)))
+		self.synchronizeTopLevel()
+		return nil
+	}
+	name := self.curTk
+	self.next()
+
+	body := self.parseDeclBody()
+	switch kindTk.Kind {
+	case token.MODEL:
+		return &ModelDecl{Tok: kindTk, Path: path, Name: name, Body: body}
+	case token.IMPL:
+		return &ImplDecl{Tok: kindTk, Path: path, Name: name, Body: body}
+	default:
+		return nil
+	}
+}
+
+func (self *Parser) parseQualifiedDeclPath() ([]token.Token, token.Token, bool) {
+	if !self.match(token.IDENTIFIER) {
+		self.report(candyerrors.ParserDeclKind(span(self.curTk)))
+		self.synchronizeTopLevel()
+		return nil, token.Token{}, false
+	}
+
+	path := []token.Token{self.curTk}
+	self.next()
+
+	for self.match(token.D_COLON) {
+		self.next()
+		if self.match(token.MODEL, token.IMPL) {
+			kindTk := self.curTk
+			path = append(path, kindTk)
+			self.next()
+			return path, kindTk, true
+		}
+		if !self.match(token.IDENTIFIER) {
+			self.report(candyerrors.ParserDeclKind(span(self.curTk)))
+			self.synchronizeTopLevel()
+			return nil, token.Token{}, false
+		}
+		path = append(path, self.curTk)
+		self.next()
+	}
+
+	self.report(candyerrors.ParserDeclKind(span(self.curTk)))
+	self.synchronizeTopLevel()
+	return nil, token.Token{}, false
+}
+
+func (self *Parser) parseDeclBody() []Stmt {
+	if !self.match(token.L_BRACE) {
+		self.report(candyerrors.ParserDeclBodyStart(span(self.curTk)))
+		self.synchronizeTopLevel()
+		return nil
+	}
+	self.next()
+
+	body := make([]Stmt, 0)
+	for !self.match(token.R_BRACE, token.EOF) {
+		if self.match(token.END, token.COMMA) {
+			self.next()
+			continue
+		}
+
+		if self.match(token.PUB) && self.match_peek(token.L_PAREN) {
+			body = append(body, self.parsePubMemberGroup()...)
+			continue
+		}
+
+		stmt := self.parseBlockStmt()
+		if stmt == nil {
+			self.synchronizeBlock()
+			continue
+		}
+		body = append(body, stmt)
+	}
+
+	if self.match(token.R_BRACE) {
+		self.next()
+	} else {
+		self.report(candyerrors.ParserDeclBodyClosing(span(self.curTk)))
+	}
+
+	if self.match(token.END) {
+		self.next()
+	}
+	return body
 }

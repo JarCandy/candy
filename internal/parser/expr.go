@@ -129,6 +129,13 @@ func (self *Parser) parsePrefix() *Expr {
 		return self.parseLiteral()
 
 	case token.IDENTIFIER:
+		if self.match_peek(token.D_COLON, token.L_PAREN) {
+			attr := self.parseAttr()
+			if attr == nil {
+				return ptr[Expr](InvalidExpr{Tok: self.curTk})
+			}
+			return ptr[Expr](attr)
+		}
 		return self.parseIdent()
 
 	case token.L_PAREN:
@@ -172,9 +179,10 @@ type Vaule struct {
 }
 
 type Attr struct {
-	Tok  token.Token
-	Path []token.Token // db::sqlite() -> [tk:"db", tk:"sqlite"]
-	Args []*Expr       // Arg && Call db::sqlite(db::std::name())
+	Tok   token.Token
+	Path  []token.Token // db::sqlite() -> [tk:"db", tk:"sqlite"]
+	Args  []*Expr       // Arg && Call db::sqlite(db::std::name())
+	Value *Expr         // lang=custom(...)
 }
 
 func (Attr) node()                {}
@@ -195,7 +203,7 @@ func (n Arg) Token() token.Token { return n.Tok }
 // works only with IDENTIFIER
 // eats all the tokens, you get a new one in the parser state
 func (self *Parser) parseAttr() *Attr {
-	if !self.match(token.IDENTIFIER, token.PACKAGE) {
+	if !self.matchAttrPathSegment() {
 		self.report(candyerrors.ParserAttrStart(span(self.curTk)))
 		return nil
 	}
@@ -206,7 +214,7 @@ func (self *Parser) parseAttr() *Attr {
 	}
 
 	for !self.match(token.R_PAREN, token.COMMA, token.ATTR_E, token.EOF) {
-		if !self.match(token.IDENTIFIER, token.PACKAGE) {
+		if !self.matchAttrPathSegment() {
 			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
 			self.synchronizeArgs()
 			return nil
@@ -215,11 +223,20 @@ func (self *Parser) parseAttr() *Attr {
 		attr.Path = append(attr.Path, self.curTk)
 		self.next()
 
-		if !self.match(token.D_COLON) {
-			if self.match(token.L_PAREN) {
-				args := self.parseArgs()
-				attr.Args = append(attr.Args, argsToExprs(args)...)
+		if self.match(token.L_PAREN) {
+			args := self.parseArgs()
+			attr.Args = append(attr.Args, argsToExprs(args)...)
+		}
+
+		if self.match(token.ASSIGN) {
+			value, ok := self.parseAttrAssignmentValue()
+			if ok {
+				attr.Value = value
 			}
+			return attr
+		}
+
+		if !self.match(token.D_COLON) {
 			return attr
 		}
 		self.next()
@@ -232,11 +249,34 @@ func (self *Parser) parseAttr() *Attr {
 		if self.match(token.L_PAREN) {
 			args := self.parseArgs()
 			attr.Args = append(attr.Args, argsToExprs(args)...)
-			return attr
+			if !self.match(token.D_COLON) {
+				return attr
+			}
+			self.next()
 		}
 	}
 
 	return attr
+}
+
+func (self *Parser) matchAttrPathSegment() bool {
+	return self.match(token.IDENTIFIER, token.PACKAGE, token.USE, token.IMPL, token.MODEL, token.LET, token.PUB)
+}
+
+func (self *Parser) parseAttrAssignmentValue() (*Expr, bool) {
+	self.next()
+	if self.match(token.IDENTIFIER) && self.match_peek(token.L_PAREN, token.D_COLON) {
+		attr := self.parseAttr()
+		if attr == nil {
+			return nil, false
+		}
+		return ptr[Expr](attr), true
+	}
+	if self.match_group(token.G_LITERAL) {
+		return self.parseExpr(Lowest), true
+	}
+	self.report(candyerrors.ParserArgValue(span(self.curTk)))
+	return nil, false
 }
 
 func argsToExprs(args []*Arg) []*Expr {
@@ -306,7 +346,7 @@ func (self *Parser) parseArg() *Arg {
 }
 
 func (self *Parser) parseArgValue(name *token.Token) *Arg {
-	if self.match(token.IDENTIFIER) && self.match_peek(token.D_COLON) {
+	if self.match(token.IDENTIFIER) && self.match_peek(token.D_COLON, token.L_PAREN) {
 		tk := self.curTk
 		errCount := len(self.Diagnostics.Errors)
 		arg := self.parseAttr()

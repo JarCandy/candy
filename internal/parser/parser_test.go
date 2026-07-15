@@ -135,6 +135,72 @@ func TestParseAttrWithTrailingColonCall(t *testing.T) {
 	}
 }
 
+func TestParseAttrWithDirectCall(t *testing.T) {
+	p := New([]byte(`db::sqlite::table("User")`), "test.cm")
+	attr := p.parseAttr()
+
+	if attr == nil {
+		t.Fatal("expected attr, got nil")
+	}
+	if got := tokenLiterals(p, attr.Path); !equalStrings(got, []string{"db", "sqlite", "table"}) {
+		t.Fatalf("expected path [db sqlite table], got %#v", got)
+	}
+	if len(attr.Args) != 1 {
+		t.Fatalf("expected 1 arg, got %d", len(attr.Args))
+	}
+	if p.curTk.Kind != token.EOF {
+		t.Fatalf("expected EOF after attr, got %s", p.curTk.Kind)
+	}
+}
+
+func TestParseAttrAssignmentCreatesMapEntry(t *testing.T) {
+	p := New([]byte(`#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];`), "test.cm")
+	attrs := p.parseAttrs()
+
+	if attrs == nil {
+		t.Fatal("expected attrs, got nil")
+	}
+	attr := attrs.Map["lang"]
+	if attr == nil {
+		t.Fatalf("expected lang attr in map, got %#v", attrs.Map)
+	}
+	if attr.Value == nil {
+		t.Fatal("expected lang attr assignment value")
+	}
+	value, ok := (*attr.Value).(*Attr)
+	if !ok {
+		t.Fatalf("expected attr assignment value, got %T", *attr.Value)
+	}
+	if got := tokenLiterals(p, value.Path); !equalStrings(got, []string{"custom"}) {
+		t.Fatalf("expected custom value path, got %#v", got)
+	}
+	if len(value.Args) != 1 {
+		t.Fatalf("expected 1 custom arg, got %d", len(value.Args))
+	}
+}
+
+func TestParseAccessExpressionWithCallChain(t *testing.T) {
+	p := New([]byte(`go::lib("github.com/google/uuid")::NewString()`), "test.cm")
+	expr := p.ParseExpr()
+
+	if expr == nil {
+		t.Fatal("expected expr, got nil")
+	}
+	attr, ok := (*expr).(*Attr)
+	if !ok {
+		t.Fatalf("expected access attr expr, got %T", *expr)
+	}
+	if got := tokenLiterals(p, attr.Path); !equalStrings(got, []string{"go", "lib", "NewString"}) {
+		t.Fatalf("expected path [go lib NewString], got %#v", got)
+	}
+	if len(attr.Args) != 1 {
+		t.Fatalf("expected 1 arg, got %d", len(attr.Args))
+	}
+	if p.curTk.Kind != token.EOF {
+		t.Fatalf("expected EOF after access expr, got %s", p.curTk.Kind)
+	}
+}
+
 func TestParseAttrs(t *testing.T) {
 	p := New([]byte(`#[db::sqlite::table::("User")];`), "test.cm")
 	attrs := p.parseAttrs()
@@ -630,6 +696,157 @@ func TestRunParsesLetDeclarations(t *testing.T) {
 	}
 	if !decl.Let.Pub {
 		t.Fatal("expected public let")
+	}
+}
+
+func TestRunParsesPubLetGroup(t *testing.T) {
+	p := New([]byte(`pub (
+    let name: string = "Candy"
+    let id: go::type::string = go::lib("github.com/google/uuid")::NewString()
+)`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 2 {
+		t.Fatalf("expected 2 decls, got %d", len(ast.Decls))
+	}
+	for i, decl := range ast.Decls {
+		letDecl, ok := decl.(*LetDecl)
+		if !ok {
+			t.Fatalf("expected decl %d to be *LetDecl, got %T", i, decl)
+		}
+		if letDecl.Let == nil || !letDecl.Let.Pub {
+			t.Fatalf("expected decl %d to be public let, got %#v", i, letDecl.Let)
+		}
+	}
+
+	second := ast.Decls[1].(*LetDecl)
+	if got := tokenLiterals(p, second.Type.(*TypeExpr).Path); !equalStrings(got, []string{"go", "type", "string"}) {
+		t.Fatalf("expected second type path [go type string], got %#v", got)
+	}
+	if _, ok := (*second.Defualt).(*Attr); !ok {
+		t.Fatalf("expected second default attr expr, got %T", *second.Defualt)
+	}
+}
+
+func TestRunParsesModelAndImplSyntax(t *testing.T) {
+	source := []byte(`package("main");
+
+use (
+    "github.com/CandyCrafts/plugins/db" -> d,
+)
+
+#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];
+
+#[db::sqlite::table("User")];
+go::model User {
+    #[db::sqlite::index];
+    pub Id: strings = go::lib("github.com/google/uuid")::NewString()
+    pub Name: string = "none",
+}
+
+#[comoser::file::no_edit(true)];
+go::impl User {
+    #[db::go::func::delete_rec];
+    pub banned() -> go::type::error,
+}`)
+	p := New(source, "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 7 {
+		t.Fatalf("expected 7 top-level decls, got %d", len(ast.Decls))
+	}
+
+	langAttrs, ok := ast.Decls[2].(*AttrsDecl)
+	if !ok {
+		t.Fatalf("expected lang attrs decl, got %T", ast.Decls[2])
+	}
+	if langAttrs.Attrs.Map["lang"] == nil {
+		t.Fatal("expected lang attr map entry")
+	}
+
+	model, ok := ast.Decls[4].(*ModelDecl)
+	if !ok {
+		t.Fatalf("expected model decl, got %T", ast.Decls[4])
+	}
+	if literal(p, model.Name) != "User" {
+		t.Fatalf("expected model name User, got %q", literal(p, model.Name))
+	}
+	if got := tokenLiterals(p, model.Path); !equalStrings(got, []string{"go", "model"}) {
+		t.Fatalf("expected model path [go model], got %#v", got)
+	}
+	if len(model.Body) != 3 {
+		t.Fatalf("expected 3 model statements, got %d", len(model.Body))
+	}
+	field, ok := model.Body[1].(*LetStmt)
+	if !ok {
+		t.Fatalf("expected field stmt, got %T", model.Body[1])
+	}
+	if field.Defualt == nil {
+		t.Fatal("expected default access expr")
+	}
+	if _, ok := (*field.Defualt).(*Attr); !ok {
+		t.Fatalf("expected default attr expr, got %T", *field.Defualt)
+	}
+
+	impl, ok := ast.Decls[6].(*ImplDecl)
+	if !ok {
+		t.Fatalf("expected impl decl, got %T", ast.Decls[6])
+	}
+	if len(impl.Body) != 2 {
+		t.Fatalf("expected 2 impl statements, got %d", len(impl.Body))
+	}
+	method, ok := impl.Body[1].(*MethodStmt)
+	if !ok {
+		t.Fatalf("expected method stmt, got %T", impl.Body[1])
+	}
+	if literal(p, method.Name) != "banned" {
+		t.Fatalf("expected method name banned, got %q", literal(p, method.Name))
+	}
+	ret, ok := method.Return.(*TypeExpr)
+	if !ok {
+		t.Fatalf("expected method return type, got %T", method.Return)
+	}
+	if got := tokenLiterals(p, ret.Path); !equalStrings(got, []string{"go", "type", "error"}) {
+		t.Fatalf("expected return path [go type error], got %#v", got)
+	}
+}
+
+func TestRunParsesPubMemberGroupInModel(t *testing.T) {
+	p := New([]byte(`go::model User {
+    pub (
+        Id: strings = go::lib("github.com/google/uuid")::NewString()
+        Name: string = "none"
+    )
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 1 {
+		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
+	}
+	model, ok := ast.Decls[0].(*ModelDecl)
+	if !ok {
+		t.Fatalf("expected model decl, got %T", ast.Decls[0])
+	}
+	if len(model.Body) != 2 {
+		t.Fatalf("expected 2 model fields, got %d", len(model.Body))
+	}
+	for i, stmt := range model.Body {
+		let, ok := stmt.(*LetStmt)
+		if !ok {
+			t.Fatalf("expected body %d to be *LetStmt, got %T", i, stmt)
+		}
+		if let.Let == nil || !let.Let.Pub {
+			t.Fatalf("expected body %d to be public let, got %#v", i, let.Let)
+		}
 	}
 }
 

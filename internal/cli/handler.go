@@ -42,7 +42,7 @@ func Help() error {
 	sb := &strings.Builder{}
 	cls := colorista.NewColorista(colorista.ThemeAuto)
 
-	sln(sb, RenderString(Candy))
+	sln(sb, cls.Gradient(candyArt, CandyGradientArt))
 	sln(sb, cls.Gradient("Usage: candy <command> [options]\n", candyGradient))
 
 	sln(sb, cls.Gradient("Commands:", candyGradient))
