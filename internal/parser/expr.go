@@ -1,8 +1,10 @@
 package parser
 
 import (
+	candyerrors "github.com/CandyCrafts/candy/internal/errors"
 	"github.com/CandyCrafts/candy/internal/parser/token"
 	"github.com/CandyCrafts/candy/internal/types"
+	"github.com/CandyCrafts/candy/pkg/branding"
 )
 
 const (
@@ -14,42 +16,51 @@ const (
 )
 
 type InvalidExpr struct {
-	Token token.Token
+	Tok token.Token
 }
 
-func (InvalidExpr) node() {}
-func (InvalidExpr) expr() {}
+func (InvalidExpr) node()                {}
+func (InvalidExpr) expr()                {}
+func (n InvalidExpr) Token() token.Token { return n.Tok }
 
 type IdentExpr struct {
+	Tok  token.Token
 	Name token.Token
 }
 
-func (IdentExpr) node() {}
-func (IdentExpr) expr() {}
+func (IdentExpr) node()                {}
+func (IdentExpr) expr()                {}
+func (n IdentExpr) Token() token.Token { return n.Tok }
 
 type LiteralExpr struct {
+	Tok   token.Token
 	Value token.Token
 }
 
-func (LiteralExpr) node() {}
-func (LiteralExpr) expr() {}
+func (LiteralExpr) node()                {}
+func (LiteralExpr) expr()                {}
+func (n LiteralExpr) Token() token.Token { return n.Tok }
 
 type UnaryExpr struct {
-	Op token.Token
-	X  *Expr
+	Tok token.Token
+	Op  token.Token
+	X   *Expr
 }
 
-func (UnaryExpr) node() {}
-func (UnaryExpr) expr() {}
+func (UnaryExpr) node()                {}
+func (UnaryExpr) expr()                {}
+func (n UnaryExpr) Token() token.Token { return n.Tok }
 
 type BinaryExpr struct {
+	Tok   token.Token
 	Left  *Expr
 	Op    token.Token
 	Right *Expr
 }
 
-func (BinaryExpr) node() {}
-func (BinaryExpr) expr() {}
+func (BinaryExpr) node()                {}
+func (BinaryExpr) expr()                {}
+func (n BinaryExpr) Token() token.Token { return n.Tok }
 
 func precedence(kind token.Kind) int {
 	switch kind {
@@ -86,6 +97,7 @@ func (self *Parser) parseExpr(pre int) *Expr {
 		right := self.parseExpr(pred)
 
 		left = ptr[Expr](BinaryExpr{
+			Tok:   op,
 			Left:  left,
 			Op:    op,
 			Right: right,
@@ -102,8 +114,9 @@ func (self *Parser) parsePrefix() *Expr {
 		self.next()
 		x := self.parseExpr(Prefix)
 		return ptr[Expr](UnaryExpr{
-			Op: op,
-			X:  x,
+			Tok: op,
+			Op:  op,
+			X:   x,
 		})
 
 	case token.INTEGER,
@@ -125,70 +138,82 @@ func (self *Parser) parsePrefix() *Expr {
 		if self.curTk.Kind == token.R_PAREN {
 			self.next()
 		} else {
-			// TODO: report an error here for a missing closing ')'.
+			self.report(candyerrors.ParserMissingClosingParen(span(self.curTk)))
 		}
 		return expr
 
 	default:
 		tk := self.curTk
-		// TODO: report an error here for an unexpected expression token.
+		if tk.Kind != token.ILLEGAL {
+			self.report(candyerrors.ParserUnexpectedExprToken(span(tk)))
+		}
 		self.next()
-		return ptr[Expr](InvalidExpr{Token: tk})
+		return ptr[Expr](InvalidExpr{Tok: tk})
 	}
 }
 
 func (self *Parser) parseLiteral() *Expr {
 	tk := self.curTk
 	self.next()
-	return ptr[Expr](LiteralExpr{Value: tk})
+	return ptr[Expr](LiteralExpr{Tok: tk, Value: tk})
 }
 
 func (self *Parser) parseIdent() *Expr {
 	tk := self.curTk
 	self.next()
-	return ptr[Expr](IdentExpr{Name: tk})
+	return ptr[Expr](IdentExpr{Tok: tk, Name: tk})
 }
 
 // Expr Call
 
 type Vaule struct {
 	Type       types.Type
-	Value      string // "" -> AccessAttr
+	Value      token.Token
 	AccessAttr *Attr
 }
 
 type Attr struct {
-	Path []string // db::sqlite()
-	Args []*Expr  // Arg && Call db::sqlite(db::std::name())
+	Tok  token.Token
+	Path []token.Token // db::sqlite() -> [tk:"db", tk:"sqlite"]
+	Args []*Expr       // Arg && Call db::sqlite(db::std::name())
 }
 
-func (Attr) node() {}
-func (Attr) expr() {}
+func (Attr) node()                {}
+func (Attr) expr()                {}
+func (n Attr) Token() token.Token { return n.Tok }
 
 type Arg struct {
-	Name  *string // nil -> ("string")
+	Tok   token.Token
+	Name  *token.Token // nil -> ("string")
 	Vaule Vaule
 }
 
-func (Arg) node() {}
-func (Arg) expr() {}
+func (Arg) node()                {}
+func (Arg) expr()                {}
+func (n Arg) Token() token.Token { return n.Tok }
 
-func (self *Parser) parseAccessAttr() *Attr {
+// supports db::sqlite("", conn: "")
+// works only with IDENTIFIER
+// eats all the tokens, you get a new one in the parser state
+func (self *Parser) parseAttr() *Attr {
 	if !self.match(token.IDENTIFIER) {
-		panic("The *Parser.parseAccessAttr function was used incorrectly.")
+		self.report(candyerrors.ParserAttrStart(span(self.curTk)))
+		return nil
 	}
 
 	attr := &Attr{
-		Path: make([]string, 0),
+		Tok:  self.curTk,
+		Path: make([]token.Token, 0),
 	}
 
 	for !self.match(token.R_PAREN, token.COMMA, token.EOF) {
 		if !self.match(token.IDENTIFIER) {
-			// todo error
+			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
+			self.synchronizeArgs()
 			return nil
 		}
 
-		attr.Path = append(attr.Path, string(self.curTk.Literal(&self.Lex.Input)))
+		attr.Path = append(attr.Path, self.curTk)
 		self.next()
 
 		if !self.match(token.D_COLON) {
@@ -200,10 +225,17 @@ func (self *Parser) parseAccessAttr() *Attr {
 		}
 		self.next()
 
-		if self.match(token.L_PAREN) {
-			args := self.parseArgs()
-			attr.Args = append(attr.Args, argsToExprs(args)...)
-			return attr
+		if self.match(token.EOF) {
+			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
+			return nil
+		}
+
+		if branding.ExtendedAttrSyntax {
+			if self.match(token.L_PAREN) {
+				args := self.parseArgs()
+				attr.Args = append(attr.Args, argsToExprs(args)...)
+				return attr
+			}
 		}
 	}
 
@@ -220,17 +252,26 @@ func argsToExprs(args []*Arg) []*Expr {
 
 func (self *Parser) parseArgs() []*Arg {
 	if !self.match(token.L_PAREN) {
-		panic("The *Parser.parseArgs function was used incorrectly.")
+		self.report(candyerrors.ParserArgsStart(span(self.curTk)))
+		return nil
 	}
 	self.next()
 
 	args := make([]*Arg, 0)
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		errCount := len(self.Diagnostics.Errors)
 		arg := self.parseArg()
 		if arg == nil {
-			// todo error
-			return nil
+			if len(self.Diagnostics.Errors) == errCount {
+				self.report(candyerrors.ParserArg(span(self.curTk)))
+			}
+			self.synchronizeArgs()
+			if self.match(token.COMMA) {
+				self.next()
+				continue
+			}
+			continue
 		}
 		args = append(args, arg)
 
@@ -239,14 +280,20 @@ func (self *Parser) parseArgs() []*Arg {
 			continue
 		}
 
-		if !self.match(token.R_PAREN) {
-			// todo error
-			return nil
+		if !self.match(token.R_PAREN, token.EOF) {
+			self.report(candyerrors.ParserArgSeparator(span(self.curTk)))
+			self.synchronizeArgs()
+			if self.match(token.COMMA) {
+				self.next()
+				continue
+			}
 		}
 	}
 
 	if self.match(token.R_PAREN) {
 		self.next()
+	} else {
+		self.report(candyerrors.ParserArgsClosingParen(span(self.curTk)))
 	}
 	return args
 }
@@ -254,45 +301,54 @@ func (self *Parser) parseArgs() []*Arg {
 func (self *Parser) parseArg() *Arg {
 	if self.match(token.IDENTIFIER) && self.match_peek(token.COLON) {
 		tk := self.curTk
-		name := string(tk.Literal(&self.Lex.Input))
 		self.next().next()
-		return self.parseArgValue(ptr(name))
+		return self.parseArgValue(&tk)
 	}
 
 	return self.parseArgValue(nil)
 }
 
-func (self *Parser) parseArgValue(name *string) *Arg {
+func (self *Parser) parseArgValue(name *token.Token) *Arg {
 	if self.match(token.IDENTIFIER) && self.match_peek(token.D_COLON) {
-		arg := self.parseAccessAttr()
+		tk := self.curTk
+		errCount := len(self.Diagnostics.Errors)
+		arg := self.parseAttr()
 		if arg == nil {
-			// todo error
+			if len(self.Diagnostics.Errors) == errCount {
+				self.report(candyerrors.ParserAttrAccess(span(self.curTk)))
+			}
 			return nil
 		}
 
 		return &Arg{
+			Tok:  tk,
 			Name: name,
 			Vaule: Vaule{
 				Type:       types.Expr,
-				Value:      "",
 				AccessAttr: arg,
 			},
 		}
 	}
 
 	if !self.match_group(token.G_LITERAL) {
-		// todo error
+		self.report(candyerrors.ParserArgValue(span(self.curTk)))
 		return nil
 	}
 
+	tk := self.curTk
 	arg := &Arg{
+		Tok:  tk,
 		Name: name,
 		Vaule: Vaule{
-			Type:       self.curTk.Kind.TypeFromKind(),
-			Value:      string(self.curTk.Literal(&self.Lex.Input)),
+			Type:       tk.Kind.TypeFromKind(),
+			Value:      tk,
 			AccessAttr: nil,
 		},
 	}
 	self.next()
 	return arg
+}
+
+func (self *Parser) report(err candyerrors.Error) {
+	self.Diagnostics.Add(err)
 }

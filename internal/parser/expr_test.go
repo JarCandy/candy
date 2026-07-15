@@ -37,3 +37,15 @@ func TestParseExprPrefix(t *testing.T) {
 		t.Fatalf("expected SUB, got %s", root.Op.Kind)
 	}
 }
+
+func TestParseExprReportsMissingClosingParen(t *testing.T) {
+	p := New([]byte("(value"), "expr.cm")
+	_ = p.ParseExpr()
+
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].CodeName != "ParsingError" {
+		t.Fatalf("expected ParsingError, got %s", p.Diagnostics.Errors[0].CodeName)
+	}
+}

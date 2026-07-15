@@ -1,12 +1,15 @@
 package parser
 
 import (
+	candyerrors "github.com/CandyCrafts/candy/internal/errors"
 	"github.com/CandyCrafts/candy/internal/parser/lexer"
 	"github.com/CandyCrafts/candy/internal/parser/token"
+	diagnostics "github.com/rp1s/digreyt"
 )
 
 type Parser struct {
-	Lex *lexer.Lexer
+	Lex         *lexer.Lexer
+	Diagnostics *diagnostics.Arena
 
 	curTk  token.Token
 	peekTk token.Token
@@ -15,8 +18,10 @@ type Parser struct {
 }
 
 func New(input []byte, filename string) *Parser {
+	lex := lexer.New(input, filename)
 	self := &Parser{
-		Lex: lexer.New(input, filename),
+		Lex:         lex,
+		Diagnostics: lex.Diagnostics,
 	}
 	self.next().next()
 	self.pos = 0
@@ -67,9 +72,15 @@ func (self *Parser) Run() (*AST, error) {
 		case token.ATTR_S:
 			self.next()
 		default:
-			// TODO: report an error here for an unexpected top-level token.
-			self.next()
+			if self.curTk.Kind != token.ILLEGAL {
+				self.report(candyerrors.ParserUnexpectedTopLevel(span(self.curTk)))
+			}
+			self.synchronizeTopLevel()
 		}
+	}
+
+	if self.Diagnostics.HasFatalErrors() {
+		return &ast, self.Diagnostics
 	}
 
 	return &ast, nil
@@ -110,7 +121,54 @@ func (self *Parser) match_peek(kinds ...token.Kind) bool {
 	return false
 }
 
+func (self *Parser) synchronizeTopLevel() {
+	self.next()
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.PACKAGE, token.USE, token.PUB, token.LET, token.ATTR_S:
+			return
+		case token.R_BRACE, token.END:
+			self.next()
+			return
+		}
+		self.next()
+	}
+}
+
+func (self *Parser) synchronizeArgs() {
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.COMMA, token.R_PAREN:
+			return
+		}
+		self.next()
+	}
+}
+
+func (self *Parser) synchronizeUse() {
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.COMMA, token.R_PAREN:
+			return
+		}
+		self.next()
+	}
+}
+
 // helpers func
 func ptr[T any](value T) *T {
 	return &value
+}
+
+func span(tk token.Token) candyerrors.Span {
+	return candyerrors.Span{
+		Start: tk.Start,
+		End:   tk.End,
+		Pos: candyerrors.Position{
+			FileName: tk.Pos.FileName,
+			Line:     tk.Pos.Line,
+			Column:   tk.Pos.Column,
+			Offset:   tk.Pos.Offset,
+		},
+	}
 }
