@@ -1,5 +1,7 @@
 package parser
 
+import "github.com/CandyCrafts/candy/internal/parser/token"
+
 type AST struct {
 	Root  Node
 	Decls []Decl
@@ -7,6 +9,7 @@ type AST struct {
 
 type Node interface {
 	node()
+	Token() token.Token
 }
 
 type Decl interface {
