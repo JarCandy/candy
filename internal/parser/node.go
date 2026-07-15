@@ -50,7 +50,7 @@ type Let struct {
 func (Let) node()                {}
 func (n Let) Token() token.Token { return n.Tok }
 
-func (self *Parser) parseLetVar() *Let {
+func (self *Parser) parseLetVar(letKw bool) *Let {
 	pub := false
 
 	if self.match(token.PUB) {
@@ -59,9 +59,11 @@ func (self *Parser) parseLetVar() *Let {
 	}
 
 	if !self.match(token.LET) {
-		self.report(candyerrors.ParserLetStart(span(self.curTk)))
-		self.synchronizeTopLevel()
-		return nil
+		if letKw {
+			self.report(candyerrors.ParserLetStart(span(self.curTk)))
+			self.synchronizeTopLevel()
+			return nil
+		}
 	}
 
 	tk := self.curTk

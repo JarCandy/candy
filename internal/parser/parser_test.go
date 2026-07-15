@@ -371,7 +371,7 @@ func TestParseUseReportsEOFAfterAliasArrow(t *testing.T) {
 
 func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
 	p := New([]byte(`pub let name: db::User = "Candy";`), "test.cm")
-	decl := p.parseLetVar()
+	decl := p.parseLetVar(true)
 
 	if decl == nil {
 		t.Fatal("expected let decl, got nil")
@@ -407,7 +407,7 @@ func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
 
 func TestParseLetVarWithTypeOnly(t *testing.T) {
 	p := New([]byte(`let name: User`), "test.cm")
-	decl := p.parseLetVar()
+	decl := p.parseLetVar(true)
 
 	if decl == nil {
 		t.Fatal("expected let decl, got nil")
@@ -428,7 +428,7 @@ func TestParseLetVarWithTypeOnly(t *testing.T) {
 
 func TestParseLetVarWithDefaultOnly(t *testing.T) {
 	p := New([]byte(`let name = 10`), "test.cm")
-	decl := p.parseLetVar()
+	decl := p.parseLetVar(true)
 
 	if decl == nil {
 		t.Fatal("expected let decl, got nil")
@@ -443,7 +443,7 @@ func TestParseLetVarWithDefaultOnly(t *testing.T) {
 
 func TestParseLetVarReportsMissingName(t *testing.T) {
 	p := New([]byte(`let : User`), "test.cm")
-	decl := p.parseLetVar()
+	decl := p.parseLetVar(true)
 
 	if decl != nil {
 		t.Fatalf("expected nil let decl, got %#v", decl)
@@ -458,7 +458,7 @@ func TestParseLetVarReportsMissingName(t *testing.T) {
 
 func TestParseLetVarReportsMissingBody(t *testing.T) {
 	p := New([]byte(`let name`), "test.cm")
-	decl := p.parseLetVar()
+	decl := p.parseLetVar(true)
 
 	if decl == nil {
 		t.Fatal("expected partial let decl, got nil")
@@ -473,7 +473,7 @@ func TestParseLetVarReportsMissingBody(t *testing.T) {
 
 func TestParseLetVarReportsMissingDefaultValue(t *testing.T) {
 	p := New([]byte(`let name = ;`), "test.cm")
-	decl := p.parseLetVar()
+	decl := p.parseLetVar(true)
 
 	if decl == nil {
 		t.Fatal("expected partial let decl, got nil")

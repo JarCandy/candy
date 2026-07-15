@@ -64,7 +64,7 @@ func (self *Parser) Run() (*AST, error) {
 				ast.Decls = append(ast.Decls, decl)
 			}
 		case token.PUB, token.LET:
-			if decl := self.parseLetVar(); decl != nil {
+			if decl := self.parseLetVar(true); decl != nil {
 				ast.Decls = append(ast.Decls, &LetDecl{Let: decl})
 			}
 		case token.IDENTIFIER:

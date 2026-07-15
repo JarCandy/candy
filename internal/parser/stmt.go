@@ -25,7 +25,7 @@ func (self *Parser) parseLetStmt() *LetStmt {
 		return nil
 	}
 
-	let := self.parseLetVar()
+	let := self.parseLetVar(true)
 	if let == nil {
 		return nil
 	}
