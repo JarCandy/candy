@@ -3,12 +3,15 @@ package lexer
 import (
 	"unicode/utf8"
 
+	candyerrors "github.com/CandyCrafts/candy/internal/errors"
 	. "github.com/CandyCrafts/candy/internal/parser/token"
+	diagnostics "github.com/rp1s/digreyt"
 )
 
 type Lexer struct {
-	Input    []byte
-	fileName string
+	Input       []byte
+	fileName    string
+	Diagnostics *diagnostics.Arena
 
 	pos    int
 	curPos int
@@ -38,10 +41,11 @@ func New(input []byte, fileName string) *Lexer {
 		input = input[:0]
 	}
 	self := &Lexer{
-		Input:    input,
-		fileName: fileName,
-		line:     1,
-		col:      0,
+		Input:       input,
+		fileName:    fileName,
+		Diagnostics: diagnostics.New(string(input)),
+		line:        1,
+		col:         0,
 	}
 	self.advance()
 	return self
@@ -164,8 +168,9 @@ func (self *Lexer) NextToken() Token {
 			self.advance()
 			return self.tok(RRT)
 		}
-		// TODO: report an error here for an unexpected '<'.
-		return self.tok(ILLEGAL)
+		tk := self.tok(ILLEGAL)
+		self.report(candyerrors.LexerUnexpectedLess(span(tk)))
+		return tk
 
 	case '-':
 		if self.rn == '>' {
@@ -202,8 +207,9 @@ func (self *Lexer) NextToken() Token {
 			self.attrDepth++
 			return self.tok(ATTR_S)
 		}
-		// TODO: report an error here for an unexpected '#'.
-		return self.tok(ILLEGAL)
+		tk := self.tok(ILLEGAL)
+		self.report(candyerrors.LexerUnexpectedSharp(span(tk)))
+		return tk
 
 	case '=':
 		return self.tok(ASSIGN)
@@ -235,7 +241,7 @@ func (self *Lexer) NextToken() Token {
 		return self.tok(R_BRACE)
 	case '[':
 		if self.attrDepth > 0 {
-			// TODO: report an error here if nested attribute brackets are not allowed.
+			self.report(candyerrors.LexerNestedAttribute(span(self.tok(ILLEGAL))))
 			self.attrDepth++
 		}
 		return self.tok(L_BRACK)
@@ -267,8 +273,9 @@ func (self *Lexer) NextToken() Token {
 		if isIdentStart(ch) {
 			return self.readIdent()
 		}
-		// TODO: report an error here for an unknown character.
-		return self.tok(ILLEGAL)
+		tk := self.tok(ILLEGAL)
+		self.report(candyerrors.LexerUnknownCharacter(span(tk)))
+		return tk
 	}
 }
 
@@ -333,7 +340,7 @@ func (self *Lexer) multiLineComment() Token {
 	for {
 		if self.rn == 0 {
 			tk := self.tok(ILLEGAL)
-			// TODO: report an error here for an unterminated multiline comment.
+			self.report(candyerrors.LexerUnterminatedMultilineComment(span(tk)))
 			self.unfreeze()
 			self.stabilize()
 			return tk
@@ -370,7 +377,7 @@ func (self *Lexer) readString() Token {
 
 	if self.rn == 0 {
 		tk := self.tok(ILLEGAL)
-		// TODO: report an error here for an unterminated string.
+		self.report(candyerrors.LexerUnterminatedString(span(tk)))
 		self.unfreeze()
 		self.stabilize()
 		return tk
@@ -387,7 +394,7 @@ func (self *Lexer) readRawString() Token {
 	}
 	if self.rn == 0 {
 		tk := self.tok(ILLEGAL)
-		// TODO: report an error here for an unterminated raw string.
+		self.report(candyerrors.LexerUnterminatedRawString(span(tk)))
 		self.unfreeze()
 		self.stabilize()
 		return tk
@@ -404,8 +411,9 @@ func (self *Lexer) readChar() Token {
 		self.advance()
 	}
 	if self.rn != '\'' {
-		// TODO: report an error here for an invalid character literal.
-		return self.tok(ILLEGAL)
+		tk := self.tok(ILLEGAL)
+		self.report(candyerrors.LexerInvalidCharacterLiteral(span(tk)))
+		return tk
 	}
 	self.advance()
 	return self.tok(CHARACTER)
@@ -473,6 +481,27 @@ func (self *Lexer) readNumber(first rune) Token {
 		return self.tok(FLOATING)
 	}
 	return self.tok(INTEGER)
+}
+
+func (self *Lexer) report(err candyerrors.Error) {
+	if self.Diagnostics == nil {
+		return
+	}
+
+	self.Diagnostics.Add(err)
+}
+
+func span(tk Token) candyerrors.Span {
+	return candyerrors.Span{
+		Start: tk.Start,
+		End:   tk.End,
+		Pos: candyerrors.Position{
+			FileName: tk.Pos.FileName,
+			Line:     tk.Pos.Line,
+			Column:   tk.Pos.Column,
+			Offset:   tk.Pos.Offset,
+		},
+	}
 }
 
 func (self *Lexer) stabilize() {
