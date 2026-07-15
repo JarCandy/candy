@@ -4,7 +4,6 @@ import (
 	candyerrors "github.com/CandyCrafts/candy/internal/errors"
 	"github.com/CandyCrafts/candy/internal/parser/token"
 	"github.com/CandyCrafts/candy/internal/types"
-	"github.com/CandyCrafts/candy/pkg/branding"
 )
 
 const (
@@ -206,7 +205,7 @@ func (self *Parser) parseAttr() *Attr {
 		Path: make([]token.Token, 0),
 	}
 
-	for !self.match(token.R_PAREN, token.COMMA, token.EOF) {
+	for !self.match(token.R_PAREN, token.COMMA, token.ATTR_E, token.EOF) {
 		if !self.match(token.IDENTIFIER) {
 			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
 			self.synchronizeArgs()
@@ -230,12 +229,10 @@ func (self *Parser) parseAttr() *Attr {
 			return nil
 		}
 
-		if branding.ExtendedAttrSyntax {
-			if self.match(token.L_PAREN) {
-				args := self.parseArgs()
-				attr.Args = append(attr.Args, argsToExprs(args)...)
-				return attr
-			}
+		if self.match(token.L_PAREN) {
+			args := self.parseArgs()
+			attr.Args = append(attr.Args, argsToExprs(args)...)
+			return attr
 		}
 	}
 

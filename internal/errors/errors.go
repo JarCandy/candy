@@ -238,6 +238,30 @@ func ParserAttrStart(span Span) Error {
 	)
 }
 
+func ParserAttrsStart(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected attribute block", "Ожидался блок атрибута"),
+		text("an attribute block must start with '#['", "блок атрибута должен начинаться с '#['"),
+	)
+}
+
+func ParserAttrsSeparator(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected comma or closing attribute bracket", "Ожидалась запятая или закрывающая скобка атрибута"),
+		text("after an attribute entry, expected ',' or ']'", "после элемента атрибута ожидалась ',' или ']'"),
+	)
+}
+
+func ParserAttrsClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing attribute bracket", "Ожидалась закрывающая скобка атрибута"),
+		text("an attribute block must end with ']'", "блок атрибута должен завершаться ']'"),
+	)
+}
+
 func ParserTypeStart(span Span) Error {
 	return parsingError(
 		span,

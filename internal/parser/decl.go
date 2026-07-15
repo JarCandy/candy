@@ -43,6 +43,19 @@ func (n LetDecl) Token() token.Token {
 	return n.Let.Token()
 }
 
+type AttrsDecl struct {
+	*Attrs
+}
+
+func (AttrsDecl) node() {}
+func (AttrsDecl) decl() {}
+func (n AttrsDecl) Token() token.Token {
+	if n.Attrs == nil {
+		return token.Token{}
+	}
+	return n.Attrs.Token()
+}
+
 func (self *Parser) parsePackage() *Package {
 	if !self.match(token.PACKAGE) {
 		return nil

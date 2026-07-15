@@ -70,7 +70,9 @@ func (self *Parser) Run() (*AST, error) {
 		case token.IDENTIFIER:
 			self.next()
 		case token.ATTR_S:
-			self.next()
+			if attrs := self.parseAttrs(); attrs != nil {
+				ast.Decls = append(ast.Decls, &AttrsDecl{Attrs: attrs})
+			}
 		default:
 			if self.curTk.Kind != token.ILLEGAL {
 				self.report(candyerrors.ParserUnexpectedTopLevel(span(self.curTk)))
@@ -138,7 +140,17 @@ func (self *Parser) synchronizeTopLevel() {
 func (self *Parser) synchronizeArgs() {
 	for self.curTk.Kind != token.EOF {
 		switch self.curTk.Kind {
-		case token.COMMA, token.R_PAREN:
+		case token.COMMA, token.R_PAREN, token.ATTR_E:
+			return
+		}
+		self.next()
+	}
+}
+
+func (self *Parser) synchronizeAttrs() {
+	for self.curTk.Kind != token.EOF {
+		switch self.curTk.Kind {
+		case token.COMMA, token.ATTR_E, token.END:
 			return
 		}
 		self.next()

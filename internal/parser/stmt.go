@@ -31,3 +31,24 @@ func (self *Parser) parseLetStmt() *LetStmt {
 	}
 	return &LetStmt{Let: let}
 }
+
+type AttrsStmt struct {
+	*Attrs
+}
+
+func (AttrsStmt) node() {}
+func (AttrsStmt) stmt() {}
+func (n AttrsStmt) Token() token.Token {
+	if n.Attrs == nil {
+		return token.Token{}
+	}
+	return n.Attrs.Token()
+}
+
+func (self *Parser) parseAttrsStmt() *AttrsStmt {
+	attrs := self.parseAttrs()
+	if attrs == nil {
+		return nil
+	}
+	return &AttrsStmt{Attrs: attrs}
+}

@@ -113,6 +113,131 @@ func TestParseNestedAccessAttrArg(t *testing.T) {
 	}
 }
 
+func TestParseAttrWithTrailingColonCall(t *testing.T) {
+	p := New([]byte(`db::sqlite::table::("User")`), "test.cm")
+	attr := p.parseAttr()
+
+	if attr == nil {
+		t.Fatal("expected attr, got nil")
+	}
+	if got := tokenLiterals(p, attr.Path); !equalStrings(got, []string{"db", "sqlite", "table"}) {
+		t.Fatalf("expected path [db sqlite table], got %#v", got)
+	}
+	if len(attr.Args) != 1 {
+		t.Fatalf("expected 1 arg, got %d", len(attr.Args))
+	}
+	arg := argFromExpr(t, attr.Args[0])
+	if literal(p, arg.Vaule.Value) != "User" {
+		t.Fatalf("expected arg User, got %q", literal(p, arg.Vaule.Value))
+	}
+	if p.curTk.Kind != token.EOF {
+		t.Fatalf("expected EOF after attr, got %s", p.curTk.Kind)
+	}
+}
+
+func TestParseAttrs(t *testing.T) {
+	p := New([]byte(`#[db::sqlite::table::("User")];`), "test.cm")
+	attrs := p.parseAttrs()
+
+	if attrs == nil {
+		t.Fatal("expected attrs, got nil")
+	}
+	if attrs.Token_s().Kind != token.ATTR_S {
+		t.Fatalf("expected ATTR_S token, got %s", attrs.Token_s().Kind)
+	}
+	if attrs.Token_e().Kind != token.ATTR_E {
+		t.Fatalf("expected ATTR_E token, got %s", attrs.Token_e().Kind)
+	}
+	if len(attrs.Attrs) != 1 {
+		t.Fatalf("expected 1 attr, got %d", len(attrs.Attrs))
+	}
+	if got := tokenLiterals(p, attrs.Attrs[0].Path); !equalStrings(got, []string{"db", "sqlite", "table"}) {
+		t.Fatalf("expected path [db sqlite table], got %#v", got)
+	}
+	if len(attrs.Attrs[0].Args) != 1 {
+		t.Fatalf("expected 1 attr arg, got %d", len(attrs.Attrs[0].Args))
+	}
+	if p.curTk.Kind != token.EOF {
+		t.Fatalf("expected EOF after attrs, got %s", p.curTk.Kind)
+	}
+}
+
+func TestParseAttrsReportsOptionalSemicolonWarning(t *testing.T) {
+	p := New([]byte(`#[db::sqlite] let name: User`), "test.cm")
+	attrs := p.parseAttrs()
+
+	if attrs == nil {
+		t.Fatal("expected attrs, got nil")
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Severity != candyerrors.SeverityWarning {
+		t.Fatalf("expected warning, got %s", p.Diagnostics.Errors[0].Severity)
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Optional semicolon is missing" {
+		t.Fatalf("expected optional semicolon warning, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+	if p.curTk.Kind != token.LET {
+		t.Fatalf("expected parser to stop at LET, got %s", p.curTk.Kind)
+	}
+}
+
+func TestParseAttrsReportsMissingClosingBracket(t *testing.T) {
+	p := New([]byte(`#[db::sqlite`), "test.cm")
+	attrs := p.parseAttrs()
+
+	if attrs == nil {
+		t.Fatal("expected partial attrs, got nil")
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected closing attribute bracket" {
+		t.Fatalf("expected closing attr diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestRunParsesAttrsDeclarations(t *testing.T) {
+	p := New([]byte(`#[db::sqlite::table::("User")];`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 1 {
+		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
+	}
+	decl, ok := ast.Decls[0].(*AttrsDecl)
+	if !ok {
+		t.Fatalf("expected *AttrsDecl, got %T", ast.Decls[0])
+	}
+	if decl.Attrs == nil {
+		t.Fatal("expected attrs payload")
+	}
+	if len(decl.Attrs.Attrs) != 1 {
+		t.Fatalf("expected 1 attr, got %d", len(decl.Attrs.Attrs))
+	}
+}
+
+func TestParseAttrsStmt(t *testing.T) {
+	p := New([]byte(`#[db::sqlite::index];`), "test.cm")
+	stmt := p.parseAttrsStmt()
+
+	if stmt == nil {
+		t.Fatal("expected attrs stmt, got nil")
+	}
+	if stmt.Attrs == nil {
+		t.Fatal("expected attrs payload")
+	}
+	if len(stmt.Attrs.Attrs) != 1 {
+		t.Fatalf("expected 1 attr, got %d", len(stmt.Attrs.Attrs))
+	}
+	if got := tokenLiterals(p, stmt.Attrs.Attrs[0].Path); !equalStrings(got, []string{"db", "sqlite", "index"}) {
+		t.Fatalf("expected path [db sqlite index], got %#v", got)
+	}
+}
+
 func TestParseArgsReportsDiagnostic(t *testing.T) {
 	p := New([]byte(`(,)`), "test.cm")
 	args := p.parseArgs()

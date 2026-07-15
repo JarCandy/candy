@@ -50,6 +50,18 @@ type Let struct {
 func (Let) node()                {}
 func (n Let) Token() token.Token { return n.Tok }
 
+type Attrs struct {
+	Tok_s token.Token // ATTR_S
+	Tok_e token.Token // ATTR_E
+
+	Attrs []*Attr
+}
+
+func (Attrs) node()                  {}
+func (n Attrs) Token() token.Token   { return n.Tok_s }
+func (n Attrs) Token_s() token.Token { return n.Tok_s }
+func (n Attrs) Token_e() token.Token { return n.Tok_e }
+
 func (self *Parser) parseLetVar(letKw bool) *Let {
 	pub := false
 
@@ -117,6 +129,65 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 	}
 
 	return decl
+}
+
+func (self *Parser) parseAttrs() *Attrs {
+	if !self.match(token.ATTR_S) {
+		self.report(candyerrors.ParserAttrsStart(span(self.curTk)))
+		return nil
+	}
+
+	attrs := &Attrs{
+		Tok_s: self.curTk,
+		Attrs: make([]*Attr, 0),
+	}
+	self.next()
+
+	for !self.match(token.ATTR_E, token.EOF) {
+		if self.match(token.COMMA) {
+			self.next()
+			continue
+		}
+
+		attr := self.parseAttr()
+		if attr == nil {
+			self.synchronizeAttrs()
+			if self.match(token.COMMA) {
+				self.next()
+			}
+			continue
+		}
+		attrs.Attrs = append(attrs.Attrs, attr)
+
+		if self.match(token.COMMA) {
+			self.next()
+			continue
+		}
+
+		if !self.match(token.ATTR_E, token.EOF) {
+			self.report(candyerrors.ParserAttrsSeparator(span(self.curTk)))
+			self.synchronizeAttrs()
+			if self.match(token.COMMA) {
+				self.next()
+			}
+		}
+	}
+
+	if self.match(token.ATTR_E) {
+		attrs.Tok_e = self.curTk
+		self.next()
+	} else {
+		self.report(candyerrors.ParserAttrsClosing(span(self.curTk)))
+	}
+
+	if self.match(token.END) {
+		self.next()
+	} else if !self.match(token.EOF) {
+		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
+	}
+
+	return attrs
+
 }
 
 // helpers func
