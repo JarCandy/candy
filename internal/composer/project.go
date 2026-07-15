@@ -30,7 +30,7 @@ func Load(fileName string, dir string) (*Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO
+	// TODO NO
 	_ = content
 
 	p := &Project{

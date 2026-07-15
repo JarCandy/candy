@@ -71,6 +71,14 @@ func (a *Arena) Clear() {
 	a.Errors = nil
 }
 
+func (a *Arena) Error() string {
+	if len(a.Errors) == 1 {
+		return a.Errors[0].Error()
+	}
+
+	return fmt.Sprintf("diagnostics failed with %d errors", len(a.Errors))
+}
+
 func (a *Arena) Print(w io.Writer) {
 	errs := a.Errors
 	a.Clear()

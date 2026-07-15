@@ -1,12 +1,15 @@
 package parser
 
 import (
+	diagnostics "github.com/CandyCrafts/candy/internal/digerr"
+	digerrors "github.com/CandyCrafts/candy/internal/digerr/errors"
 	"github.com/CandyCrafts/candy/internal/parser/lexer"
 	"github.com/CandyCrafts/candy/internal/parser/token"
 )
 
 type Parser struct {
-	Lex *lexer.Lexer
+	Lex         *lexer.Lexer
+	Diagnostics *diagnostics.Arena
 
 	curTk  token.Token
 	peekTk token.Token
@@ -15,8 +18,10 @@ type Parser struct {
 }
 
 func New(input []byte, filename string) *Parser {
+	lex := lexer.New(input, filename)
 	self := &Parser{
-		Lex: lexer.New(input, filename),
+		Lex:         lex,
+		Diagnostics: lex.Diagnostics,
 	}
 	self.next().next()
 	self.pos = 0
@@ -67,9 +72,15 @@ func (self *Parser) Run() (*AST, error) {
 		case token.ATTR_S:
 			self.next()
 		default:
-			// TODO: report an error here for an unexpected top-level token.
+			if self.curTk.Kind != token.ILLEGAL {
+				self.report(digerrors.ParserUnexpectedTopLevel(self.curTk))
+			}
 			self.next()
 		}
+	}
+
+	if self.Diagnostics.HasErrors() {
+		return &ast, self.Diagnostics
 	}
 
 	return &ast, nil

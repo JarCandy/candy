@@ -1,6 +1,7 @@
 package parser
 
 import (
+	digerrors "github.com/CandyCrafts/candy/internal/digerr/errors"
 	"github.com/CandyCrafts/candy/internal/parser/token"
 	"github.com/CandyCrafts/candy/internal/types"
 )
@@ -125,13 +126,15 @@ func (self *Parser) parsePrefix() *Expr {
 		if self.curTk.Kind == token.R_PAREN {
 			self.next()
 		} else {
-			// TODO: report an error here for a missing closing ')'.
+			self.report(digerrors.ParserMissingClosingParen(self.curTk))
 		}
 		return expr
 
 	default:
 		tk := self.curTk
-		// TODO: report an error here for an unexpected expression token.
+		if tk.Kind != token.ILLEGAL {
+			self.report(digerrors.ParserUnexpectedExprToken(tk))
+		}
 		self.next()
 		return ptr[Expr](InvalidExpr{Token: tk})
 	}
@@ -184,7 +187,7 @@ func (self *Parser) parseAccessAttr() *Attr {
 
 	for !self.match(token.R_PAREN, token.COMMA, token.EOF) {
 		if !self.match(token.IDENTIFIER) {
-			// todo error
+			self.report(digerrors.ParserAttrPathSegment(self.curTk))
 			return nil
 		}
 
@@ -227,9 +230,12 @@ func (self *Parser) parseArgs() []*Arg {
 	args := make([]*Arg, 0)
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		errCount := len(self.Diagnostics.Errors)
 		arg := self.parseArg()
 		if arg == nil {
-			// todo error
+			if len(self.Diagnostics.Errors) == errCount {
+				self.report(digerrors.ParserArg(self.curTk))
+			}
 			return nil
 		}
 		args = append(args, arg)
@@ -240,7 +246,7 @@ func (self *Parser) parseArgs() []*Arg {
 		}
 
 		if !self.match(token.R_PAREN) {
-			// todo error
+			self.report(digerrors.ParserArgSeparator(self.curTk))
 			return nil
 		}
 	}
@@ -264,9 +270,12 @@ func (self *Parser) parseArg() *Arg {
 
 func (self *Parser) parseArgValue(name *string) *Arg {
 	if self.match(token.IDENTIFIER) && self.match_peek(token.D_COLON) {
+		errCount := len(self.Diagnostics.Errors)
 		arg := self.parseAccessAttr()
 		if arg == nil {
-			// todo error
+			if len(self.Diagnostics.Errors) == errCount {
+				self.report(digerrors.ParserAttrAccess(self.curTk))
+			}
 			return nil
 		}
 
@@ -281,7 +290,7 @@ func (self *Parser) parseArgValue(name *string) *Arg {
 	}
 
 	if !self.match_group(token.G_LITERAL) {
-		// todo error
+		self.report(digerrors.ParserArgValue(self.curTk))
 		return nil
 	}
 
@@ -295,4 +304,8 @@ func (self *Parser) parseArgValue(name *string) *Arg {
 	}
 	self.next()
 	return arg
+}
+
+func (self *Parser) report(err digerrors.Error) {
+	self.Diagnostics.Add(err)
 }

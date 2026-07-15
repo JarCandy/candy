@@ -83,6 +83,51 @@ func TestParseAccessAttr(t *testing.T) {
 	}
 }
 
+func TestParseArgsReportsDiagnostic(t *testing.T) {
+	p := New([]byte(`(,)`), "test.cm")
+	args := p.parseArgs()
+
+	if args != nil {
+		t.Fatalf("expected nil args, got %#v", args)
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].CodeName != "ParsingError" {
+		t.Fatalf("expected ParsingError, got %s", p.Diagnostics.Errors[0].CodeName)
+	}
+}
+
+func TestParseAccessAttrReportsDiagnostic(t *testing.T) {
+	p := New([]byte(`db::123`), "test.cm")
+	attr := p.parseAccessAttr()
+
+	if attr != nil {
+		t.Fatalf("expected nil attr, got %#v", attr)
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow == "" {
+		t.Fatal("expected diagnostic arrow text")
+	}
+}
+
+func TestRunReportsUnexpectedTopLevelToken(t *testing.T) {
+	p := New([]byte(`;`), "test.cm")
+	_, err := p.Run()
+
+	if err == nil {
+		t.Fatal("expected diagnostics error, got nil")
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].CodeName != "ParsingError" {
+		t.Fatalf("expected ParsingError, got %s", p.Diagnostics.Errors[0].CodeName)
+	}
+}
+
 func argFromExpr(t *testing.T, expr *Expr) *Arg {
 	t.Helper()
 	if expr == nil {

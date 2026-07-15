@@ -41,3 +41,33 @@ go::impl User {
 		}
 	}
 }
+
+func TestLexerReportsIllegalDiagnostic(t *testing.T) {
+	lex := New([]byte("<"), "test.cm")
+	tk := lex.NextToken()
+
+	if tk.Kind != token.ILLEGAL {
+		t.Fatalf("expected ILLEGAL token, got %s", tk.Kind)
+	}
+	if len(lex.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(lex.Diagnostics.Errors))
+	}
+	if lex.Diagnostics.Errors[0].CodeName != "LexerIllegal" {
+		t.Fatalf("expected LexerIllegal, got %s", lex.Diagnostics.Errors[0].CodeName)
+	}
+}
+
+func TestLexerReportsNoClosingDiagnostic(t *testing.T) {
+	lex := New([]byte(`"unterminated`), "test.cm")
+	tk := lex.NextToken()
+
+	if tk.Kind != token.ILLEGAL {
+		t.Fatalf("expected ILLEGAL token, got %s", tk.Kind)
+	}
+	if len(lex.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(lex.Diagnostics.Errors))
+	}
+	if lex.Diagnostics.Errors[0].CodeName != "LexerNoClosing" {
+		t.Fatalf("expected LexerNoClosing, got %s", lex.Diagnostics.Errors[0].CodeName)
+	}
+}
