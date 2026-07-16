@@ -153,7 +153,7 @@ func helpDocument() clifmt.Document {
 			{
 				Title: clifmt.T("Examples", clifmt.Lang("ru", "Примеры")),
 				Rows: []clifmt.Row{
-					{Label: "candy build examples/models/1-model.cm", Description: clifmt.T("Build using the file name as project name.", clifmt.Lang("ru", "Собрать, используя имя файла как имя проекта."))},
+					{Label: "candy build examples/models/model.cm", Description: clifmt.T("Build using the file name as project name.", clifmt.Lang("ru", "Собрать, используя имя файла как имя проекта."))},
 					{Label: "candy build src/user.cm user", Description: clifmt.T("Build with an explicit project name.", clifmt.Lang("ru", "Собрать с явным именем проекта."))},
 					{Label: "candy --lang ru help", Description: clifmt.T("Show help in Russian.", clifmt.Lang("ru", "Показать справку на русском."))},
 				},
