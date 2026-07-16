@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/CandyCrafts/candy/internal/analyzer"
 	"github.com/CandyCrafts/candy/internal/composer"
 	"github.com/rp1s/colorista"
 )
@@ -46,8 +47,8 @@ func Help() error {
 	sln(sb, cls.Gradient("Usage: candy <command> [options]\n", candyGradient))
 
 	sln(sb, cls.Gradient("Commands:", candyGradient))
-	s(sb, "  build")
-	sln(sb, cls.Apply("   Build the project", colorista.Rgb(colorista.RGB{R: 217, G: 217, B: 217})))
+	s(sb, "  build <path> [name]")
+	sln(sb, cls.Apply("   Build a file from the current directory", colorista.Rgb(colorista.RGB{R: 217, G: 217, B: 217})))
 	s(sb, "  help")
 	sln(sb, cls.Apply("    Show this help message\n", colorista.Rgb(colorista.RGB{R: 217, G: 217, B: 217})))
 	sln(sb, cls.Gradient("Options:", candyGradient))
@@ -59,10 +60,31 @@ func Help() error {
 }
 
 func Build() error {
-	project, err := composer.Load("", "")
+	args := os.Args[2:]
+	if len(args) == 0 {
+		return fmt.Errorf("usage: candy build <path> [name]")
+	}
+	if len(args) > 2 {
+		return fmt.Errorf("usage: candy build <path> [name]")
+	}
+
+	project, err := composer.Load(args[0], projectNameArg(args))
 	if err != nil {
 		return err
 	}
-	_ = project
+	result, err := analyzer.New().Project(project)
+	if err != nil {
+		return err
+	}
+	if result.Diagnostics.HasFatalErrors() {
+		return result.Diagnostics
+	}
 	return nil
+}
+
+func projectNameArg(args []string) string {
+	if len(args) < 2 {
+		return ""
+	}
+	return args[1]
 }
