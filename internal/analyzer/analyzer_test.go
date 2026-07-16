@@ -16,6 +16,7 @@ let active: bool = true;
 let badFlag: bool = "true";
 let sum: int = 1 + 2;
 let negative: int = -1;
+let namespaced: go::type::string = "x";
 
 go::model User {
 	pub (
@@ -31,18 +32,19 @@ go::model User {
 	}
 
 	file := result.Files[0]
-	if file.LetCount != 8 {
-		t.Fatalf("expected 8 lets, got %d", file.LetCount)
+	if file.LetCount != 9 {
+		t.Fatalf("expected 9 lets, got %d", file.LetCount)
 	}
-	if file.TypeChecks != 8 {
-		t.Fatalf("expected 8 type checks, got %d", file.TypeChecks)
+	if file.TypeChecks != 9 {
+		t.Fatalf("expected 9 type checks, got %d", file.TypeChecks)
 	}
-	if len(file.TypeErrors) != 2 {
-		t.Fatalf("expected two type errors, got %d", len(file.TypeErrors))
+	if len(file.TypeErrors) != 3 {
+		t.Fatalf("expected three type errors, got %d", len(file.TypeErrors))
 	}
 
 	assertTypeError(t, file.TypeErrors, "age", "string", "int")
 	assertTypeError(t, file.TypeErrors, "badFlag", "bool", "string")
+	assertTypeError(t, file.TypeErrors, "namespaced", "go::type::string", "string")
 	if !result.Diagnostics.HasFatalErrors() {
 		t.Fatal("expected fatal diagnostic for type mismatch")
 	}

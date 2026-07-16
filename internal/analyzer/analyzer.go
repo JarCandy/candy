@@ -2,17 +2,15 @@ package analyzer
 
 import (
 	stderrors "errors"
-	"strings"
 
 	"github.com/CandyCrafts/candy/internal/composer"
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
 	"github.com/CandyCrafts/candy/internal/parser"
-	"github.com/CandyCrafts/candy/internal/parser/token"
 	diagnostics "github.com/rp1s/digreyt"
 )
 
 type Analyzer struct {
 	Diagnostics *diagnostics.Arena
+	Types       *TypeChecker
 }
 
 type Result struct {
@@ -30,17 +28,9 @@ type File struct {
 	TypeErrors []TypeError
 }
 
-type TypeError struct {
-	Name     string
-	Declared string
-	Got      string
-	Pos      token.Position
-}
-
 func New() *Analyzer {
-	return &Analyzer{
-		Diagnostics: diagnostics.New(""),
-	}
+	arena := diagnostics.New("")
+	return &Analyzer{Diagnostics: arena, Types: NewTypeChecker(arena)}
 }
 
 func (a *Analyzer) Project(project *composer.Project) (*Result, error) {
@@ -49,6 +39,11 @@ func (a *Analyzer) Project(project *composer.Project) (*Result, error) {
 	}
 	if a.Diagnostics == nil {
 		a.Diagnostics = diagnostics.New("")
+	}
+	if a.Types == nil {
+		a.Types = NewTypeChecker(a.Diagnostics)
+	} else {
+		a.Types.Diagnostics = a.Diagnostics
 	}
 
 	result := &Result{
@@ -102,122 +97,11 @@ func (a *Analyzer) checkLet(file *File, source []byte, let *parser.Let) {
 	}
 	file.LetCount++
 
-	declared := typeText(source, let.Type)
-	got := exprType(source, let.Defualt)
-	if declared == "" || got == "" {
-		return
+	result := a.Types.CheckLet(source, let)
+	if result.Checked {
+		file.TypeChecks++
 	}
-
-	file.TypeChecks++
-	if declared == got {
-		return
-	}
-
-	typeErr := TypeError{
-		Name:     tokenText(source, let.Name),
-		Declared: declared,
-		Got:      got,
-		Pos:      let.Name.Pos,
-	}
-	file.TypeErrors = append(file.TypeErrors, typeErr)
-	a.Diagnostics.Add(candyerrors.AnalyzerTypeMismatch(span(let.Name), declared, got))
-}
-
-func typeText(source []byte, typ parser.Type) string {
-	if typ == nil {
-		return ""
-	}
-
-	switch n := typ.(type) {
-	case *parser.TypeExpr:
-		return tokenPath(source, n.Path)
-	case parser.TypeExpr:
-		return tokenPath(source, n.Path)
-	default:
-		return ""
-	}
-}
-
-func exprType(source []byte, expr *parser.Expr) string {
-	if expr == nil || *expr == nil {
-		return ""
-	}
-
-	switch n := (*expr).(type) {
-	case parser.LiteralExpr:
-		return literalType(n.Value.Kind)
-	case *parser.LiteralExpr:
-		return literalType(n.Value.Kind)
-	case parser.UnaryExpr:
-		return exprType(source, n.X)
-	case *parser.UnaryExpr:
-		return exprType(source, n.X)
-	case parser.BinaryExpr:
-		left := exprType(source, n.Left)
-		right := exprType(source, n.Right)
-		if left != "" && left == right {
-			return left
-		}
-		return ""
-	case *parser.BinaryExpr:
-		left := exprType(source, n.Left)
-		right := exprType(source, n.Right)
-		if left != "" && left == right {
-			return left
-		}
-		return ""
-	default:
-		return ""
-	}
-}
-
-func literalType(kind token.Kind) string {
-	switch kind {
-	case token.STRING, token.RAW_STRING:
-		return "string"
-	case token.CHARACTER:
-		return "char"
-	case token.INTEGER:
-		return "int"
-	case token.FLOATING:
-		return "float"
-	case token.IMAGINARY:
-		return "complex"
-	case token.TRUE, token.FALSE:
-		return "bool"
-	default:
-		return ""
-	}
-}
-
-func tokenPath(source []byte, path []token.Token) string {
-	if len(path) == 0 {
-		return ""
-	}
-
-	parts := make([]string, 0, len(path))
-	for _, tk := range path {
-		parts = append(parts, tokenText(source, tk))
-	}
-	return strings.Join(parts, "::")
-}
-
-func tokenText(source []byte, tk token.Token) string {
-	if len(source) == 0 || tk.End > uint64(len(source)) || tk.Start > tk.End {
-		return ""
-	}
-	return string(tk.Literal(&source))
-}
-
-func span(tk token.Token) candyerrors.Span {
-	return candyerrors.Span{
-		Start: tk.Start,
-		End:   tk.End,
-		Pos: candyerrors.Position{
-			FileName: tk.Pos.FileName,
-			Line:     tk.Pos.Line,
-			Column:   tk.Pos.Column,
-			Offset:   tk.Pos.Offset,
-		},
+	if result.Error != nil {
+		file.TypeErrors = append(file.TypeErrors, *result.Error)
 	}
 }
