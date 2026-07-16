@@ -1,6 +1,8 @@
 package errors
 
 import (
+	"fmt"
+
 	digreyt "github.com/rp1s/digreyt"
 	"github.com/rp1s/digreyt/translate"
 )
@@ -24,9 +26,10 @@ const (
 	executingCommandsIndex
 	parsingErrorIndex
 	errorActionMapIndex
+	analyzerTypeMismatchIndex
 )
 
-// Не менять массив!!
+// Не менять порядок существующих элементов.
 var Errors = []Error{
 	define(0, "TestError", SeverityWarning,
 		text("test diagnostic error", "тестовая ошибка для проверки механизма диагностики"),
@@ -65,6 +68,11 @@ var Errors = []Error{
 		text("action map error", "ошибка работы с таблицей"),
 		nil,
 		text("create https://github.com/fugalang/fugu/issues", "создайте https://github.com/fugalang/fugu/issues"),
+	),
+	define(7, "AnalyzerTypeMismatch", SeverityError,
+		text("type mismatch", "несовпадение типов"),
+		nil,
+		text("the declared type and value type are different", "объявленный тип и тип значения отличаются"),
 	),
 }
 
@@ -445,6 +453,18 @@ func ParserPubGroupClosing(span Span) Error {
 		span,
 		text("Expected closing public group", "Ожидалось закрытие публичной группы"),
 		text("a pub group must end with ')'", "группа pub должна завершаться символом ')'"),
+	)
+}
+
+func AnalyzerTypeMismatch(span Span, declared string, got string) Error {
+	return diagnostic(
+		Errors[analyzerTypeMismatchIndex],
+		span,
+		text(
+			fmt.Sprintf("Expected %s, got %s", declared, got),
+			fmt.Sprintf("Ожидался тип %s, получен %s", declared, got),
+		),
+		text("change the declared type or the default value", "измените объявленный тип или значение по умолчанию"),
 	)
 }
 

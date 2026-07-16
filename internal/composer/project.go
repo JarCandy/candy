@@ -1,81 +1,87 @@
 package composer
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/CandyCrafts/candy/internal/parser"
 )
 
 type Project struct {
-	WorkPath string // home - project
+	Name     string
+	WorkPath string // directory where the build command was called
 	AstFile  []AstFile
 }
 
 type AstFile struct {
 	FileName string
+	Path     string
+	Source   []byte
 	Ast      parser.AST
 }
 
-func Load(fileName string, dir string) (*Project, error) {
-	path, err := home_path()
+func Load(filePath string, name string) (*Project, error) {
+	if strings.TrimSpace(filePath) == "" {
+		return nil, fmt.Errorf("build file path is required")
+	}
+	name = strings.TrimSpace(name)
+
+	workPath, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	content, err := get_content_file(fileName, dir)
+	absPath, err := resolveFilePath(workPath, filePath)
 	if err != nil {
 		return nil, err
 	}
-	// TODO NO
-	_ = content
 
-	p := &Project{
-		WorkPath: path,
+	content, err := getContentFile(absPath)
+	if err != nil {
+		return nil, err
 	}
-	return p, nil
+
+	ast, err := parser.New(content, absPath).Run()
+	if err != nil {
+		return nil, err
+	}
+
+	if name == "" {
+		name = nameFromPath(absPath)
+	}
+
+	return &Project{
+		Name:     name,
+		WorkPath: workPath,
+		AstFile: []AstFile{
+			{
+				FileName: filepath.Base(absPath),
+				Path:     absPath,
+				Source:   content,
+				Ast:      *ast,
+			},
+		},
+	}, nil
 }
 
-func home_path() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
+func resolveFilePath(workPath string, filePath string) (string, error) {
+	if !filepath.IsAbs(filePath) {
+		filePath = filepath.Join(workPath, filePath)
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	path, err := filepath.Rel(home, cwd)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
+	return filepath.Abs(filePath)
 }
 
-func get_content_file(fileName string, dir string) ([]byte, error) {
-	if dir == "" {
-		dir = "./"
-	}
-
-	filePath := filepath.Join(dir, fileName)
-
+func getContentFile(filePath string) ([]byte, error) {
 	info, err := os.Stat(filePath)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, err
-		}
-
 		return nil, err
 	}
 
 	if info.IsDir() {
-		return nil, fmt.Errorf("The specified path contains a directory, not a file")
+		return nil, fmt.Errorf("the specified path contains a directory, not a file: %s", filePath)
 	}
 
 	content, err := os.ReadFile(filePath)
@@ -84,4 +90,13 @@ func get_content_file(fileName string, dir string) ([]byte, error) {
 	}
 
 	return content, nil
+}
+
+func nameFromPath(filePath string) string {
+	name := filepath.Base(filePath)
+	ext := filepath.Ext(name)
+	if ext == "" {
+		return name
+	}
+	return strings.TrimSuffix(name, ext)
 }

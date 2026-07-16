@@ -63,13 +63,13 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build all platforms
-        run: make build-all
+      - name: Build current platform
+        run: make build
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: candy-binaries
+          name: candy-binary
           path: bin/
           if-no-files-found: error
 
