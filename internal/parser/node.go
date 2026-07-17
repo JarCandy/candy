@@ -47,8 +47,8 @@ type Let struct {
 	Pub     bool
 }
 
-func (Let) node()                {}
-func (n Let) Token() token.Token { return n.Tok }
+func (Let) node()                   {}
+func (self Let) Token() token.Token { return self.Tok }
 
 type Attrs struct {
 	Tok_s token.Token // ATTR_S
@@ -58,10 +58,10 @@ type Attrs struct {
 	Map   map[string]*Attr
 }
 
-func (Attrs) node()                  {}
-func (n Attrs) Token() token.Token   { return n.Tok_s }
-func (n Attrs) Token_s() token.Token { return n.Tok_s }
-func (n Attrs) Token_e() token.Token { return n.Tok_e }
+func (Attrs) node()                     {}
+func (self Attrs) Token() token.Token   { return self.Tok_s }
+func (self Attrs) Token_s() token.Token { return self.Tok_s }
+func (self Attrs) Token_e() token.Token { return self.Tok_e }
 
 func (self *Parser) parseLetVar(letKw bool) *Let {
 	pub := false

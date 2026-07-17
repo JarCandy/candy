@@ -11,11 +11,11 @@ type LetStmt struct {
 
 func (LetStmt) node() {}
 func (LetStmt) stmt() {}
-func (n LetStmt) Token() token.Token {
-	if n.Let == nil {
+func (self LetStmt) Token() token.Token {
+	if self.Let == nil {
 		return token.Token{}
 	}
-	return n.Let.Token()
+	return self.Let.Token()
 }
 
 func (self *Parser) parseLetStmt() *LetStmt {
@@ -38,11 +38,11 @@ type AttrsStmt struct {
 
 func (AttrsStmt) node() {}
 func (AttrsStmt) stmt() {}
-func (n AttrsStmt) Token() token.Token {
-	if n.Attrs == nil {
+func (self AttrsStmt) Token() token.Token {
+	if self.Attrs == nil {
 		return token.Token{}
 	}
-	return n.Attrs.Token()
+	return self.Attrs.Token()
 }
 
 func (self *Parser) parseAttrsStmt() *AttrsStmt {
@@ -61,9 +61,9 @@ type MethodStmt struct {
 	Pub    bool
 }
 
-func (MethodStmt) node()                {}
-func (MethodStmt) stmt()                {}
-func (n MethodStmt) Token() token.Token { return n.Tok }
+func (MethodStmt) node()                   {}
+func (MethodStmt) stmt()                   {}
+func (self MethodStmt) Token() token.Token { return self.Tok }
 
 func (self *Parser) parseBlockStmt() Stmt {
 	switch self.curTk.Kind {

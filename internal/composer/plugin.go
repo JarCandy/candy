@@ -38,15 +38,15 @@ func valueOrDefault[T any](value *T, defaultValue T) *T {
 	return &defaultValue
 }
 
-func (p *ProjectPlugin) Default(projectPatch string) {
-	p.Type = valueOrDefault(p.Type, Base)
-	p.Name = valueOrDefault(p.Name, "default-plugin")
-	p.Version = valueOrDefault(p.Version, "latest")
-	p.Author = valueOrDefault(p.Author, "pidoras")
+func (self *ProjectPlugin) Default(projectPatch string) {
+	self.Type = valueOrDefault(self.Type, Base)
+	self.Name = valueOrDefault(self.Name, "default-plugin")
+	self.Version = valueOrDefault(self.Version, "latest")
+	self.Author = valueOrDefault(self.Author, "pidoras")
 
-	p.Custom.PluginPath = valueOrDefault(p.Custom.PluginPath, "out/plugin.wasm")
-	p.Custom.DescriptionPath = valueOrDefault(p.Custom.DescriptionPath, "d.txt")
-	p.Custom.InterfacePath = valueOrDefault(p.Custom.InterfacePath, "interface"+branding.PrefixInterfaceFile)
+	self.Custom.PluginPath = valueOrDefault(self.Custom.PluginPath, "out/plugin.wasm")
+	self.Custom.DescriptionPath = valueOrDefault(self.Custom.DescriptionPath, "d.txt")
+	self.Custom.InterfacePath = valueOrDefault(self.Custom.InterfacePath, "interface"+branding.PrefixInterfaceFile)
 }
 
 func DownloadProjectPlagin(url string, localPath string) error {

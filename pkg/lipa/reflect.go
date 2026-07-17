@@ -33,8 +33,8 @@ func buildTree(value any, options Options) *Node {
 	return builder.value("root", reflect.ValueOf(value), 0)
 }
 
-func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
-	id := b.id()
+func (self *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
+	id := self.id()
 	node := &Node{ID: id, Name: name}
 
 	if !v.IsValid() {
@@ -46,16 +46,16 @@ func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
 
 	node.Kind = v.Kind().String()
 	node.Type = v.Type().String()
-	node.Snippet = b.sourceSnippet(v)
+	node.Snippet = self.sourceSnippet(v)
 
-	if b.options.MaxNodes > 0 && b.nodes >= b.options.MaxNodes {
+	if self.options.MaxNodes > 0 && self.nodes >= self.options.MaxNodes {
 		node.Value = "max nodes reached"
 		node.Trunc = true
 		return node
 	}
-	b.nodes++
+	self.nodes++
 
-	if b.options.MaxDepth > 0 && depth >= b.options.MaxDepth {
+	if self.options.MaxDepth > 0 && depth >= self.options.MaxDepth {
 		node.Value = "max depth reached"
 		node.Trunc = true
 		return node
@@ -68,7 +68,7 @@ func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
 			node.Value = "nil"
 			return node
 		}
-		return b.value(name, v.Elem(), depth)
+		return self.value(name, v.Elem(), depth)
 
 	case reflect.Pointer:
 		if v.IsNil() {
@@ -77,14 +77,14 @@ func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
 			return node
 		}
 		key := visitKey{typ: v.Type(), ptr: v.Pointer()}
-		if oldID, ok := b.seen[key]; ok {
+		if oldID, ok := self.seen[key]; ok {
 			node.Cycle = true
 			node.Ref = oldID
 			node.Value = "cycle -> " + oldID
 			return node
 		}
-		b.seen[key] = node.ID
-		inner := b.value(name, v.Elem(), depth)
+		self.seen[key] = node.ID
+		inner := self.value(name, v.Elem(), depth)
 		inner.ID = node.ID
 		return inner
 
@@ -94,17 +94,17 @@ func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
 			field := t.Field(i)
 			if field.PkgPath != "" && !field.Anonymous {
 				node.Children = append(node.Children, &Node{
-					ID:     b.id(),
+					ID:     self.id(),
 					Name:   field.Name,
 					Kind:   v.Field(i).Kind().String(),
 					Type:   field.Type.String(),
 					Value:  "<unexported>",
-					Hidden: b.isHiddenField(field.Name),
+					Hidden: self.isHiddenField(field.Name),
 				})
 				continue
 			}
-			child := b.value(field.Name, v.Field(i), depth+1)
-			child.Hidden = b.isHiddenField(field.Name)
+			child := self.value(field.Name, v.Field(i), depth+1)
+			child.Hidden = self.isHiddenField(field.Name)
 			node.Children = append(node.Children, child)
 		}
 
@@ -114,7 +114,7 @@ func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
 			node.Value += fmt.Sprintf(" cap=%d", v.Cap())
 		}
 		for i := 0; i < v.Len(); i++ {
-			node.Children = append(node.Children, b.value("["+strconv.Itoa(i)+"]", v.Index(i), depth+1))
+			node.Children = append(node.Children, self.value("["+strconv.Itoa(i)+"]", v.Index(i), depth+1))
 		}
 
 	case reflect.Map:
@@ -129,8 +129,8 @@ func (b *treeBuilder) value(name string, v reflect.Value, depth int) *Node {
 			return fmt.Sprint(valueInterface(keys[i])) < fmt.Sprint(valueInterface(keys[j]))
 		})
 		for _, key := range keys {
-			child := b.value(fmt.Sprintf("[%v]", valueInterface(key)), v.MapIndex(key), depth+1)
-			child.Children = append([]*Node{b.value("key", key, depth+1)}, child.Children...)
+			child := self.value(fmt.Sprintf("[%v]", valueInterface(key)), v.MapIndex(key), depth+1)
+			child.Children = append([]*Node{self.value("key", key, depth+1)}, child.Children...)
 			node.Children = append(node.Children, child)
 		}
 
@@ -183,8 +183,8 @@ func makeHiddenFields(names []string) map[string]bool {
 	return fields
 }
 
-func (b *treeBuilder) isHiddenField(name string) bool {
-	return b.hiddenFields[name]
+func (self *treeBuilder) isHiddenField(name string) bool {
+	return self.hiddenFields[name]
 }
 
 func sourceField(v reflect.Value) string {
@@ -216,15 +216,15 @@ func sourceField(v reflect.Value) string {
 	return field.String()
 }
 
-func (b *treeBuilder) sourceSnippet(v reflect.Value) *SourceSnippet {
-	if b.options.Source == "" {
+func (self *treeBuilder) sourceSnippet(v reflect.Value) *SourceSnippet {
+	if self.options.Source == "" {
 		return nil
 	}
 	pos, ok := extractPosition(v)
 	if !ok || pos.Line == 0 || pos.Column == 0 {
 		return nil
 	}
-	return buildSourceSnippet(b.options.Source, pos)
+	return buildSourceSnippet(self.options.Source, pos)
 }
 
 type sourcePosition struct {
@@ -365,9 +365,9 @@ func quoteString(value string) string {
 	return strconv.Quote(value)
 }
 
-func (b *treeBuilder) id() string {
-	b.nextID++
-	return "n" + strconv.Itoa(b.nextID)
+func (self *treeBuilder) id() string {
+	self.nextID++
+	return "n" + strconv.Itoa(self.nextID)
 }
 
 func valueInterface(v reflect.Value) any {

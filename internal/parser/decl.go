@@ -10,9 +10,9 @@ type Package struct {
 	Args []*Expr
 }
 
-func (Package) node()                {}
-func (Package) decl()                {}
-func (n Package) Token() token.Token { return n.Tok }
+func (Package) node()                   {}
+func (Package) decl()                   {}
+func (self Package) Token() token.Token { return self.Tok }
 
 type Use struct {
 	Tok      token.Token
@@ -25,9 +25,9 @@ type UseImport struct {
 	Alias *token.Token
 }
 
-func (Use) node()                {}
-func (Use) decl()                {}
-func (n Use) Token() token.Token { return n.Tok }
+func (Use) node()                   {}
+func (Use) decl()                   {}
+func (self Use) Token() token.Token { return self.Tok }
 
 type LetDecl struct {
 	*Let
@@ -35,11 +35,11 @@ type LetDecl struct {
 
 func (LetDecl) node() {}
 func (LetDecl) decl() {}
-func (n LetDecl) Token() token.Token {
-	if n.Let == nil {
+func (self LetDecl) Token() token.Token {
+	if self.Let == nil {
 		return token.Token{}
 	}
-	return n.Let.Token()
+	return self.Let.Token()
 }
 
 type AttrsDecl struct {
@@ -48,11 +48,11 @@ type AttrsDecl struct {
 
 func (AttrsDecl) node() {}
 func (AttrsDecl) decl() {}
-func (n AttrsDecl) Token() token.Token {
-	if n.Attrs == nil {
+func (self AttrsDecl) Token() token.Token {
+	if self.Attrs == nil {
 		return token.Token{}
 	}
-	return n.Attrs.Token()
+	return self.Attrs.Token()
 }
 
 type QualifiedDecl struct {
@@ -62,9 +62,9 @@ type QualifiedDecl struct {
 	Body []Stmt
 }
 
-func (QualifiedDecl) node()                {}
-func (QualifiedDecl) decl()                {}
-func (n QualifiedDecl) Token() token.Token { return n.Tok }
+func (QualifiedDecl) node()                   {}
+func (QualifiedDecl) decl()                   {}
+func (self QualifiedDecl) Token() token.Token { return self.Tok }
 
 func (self *Parser) parsePackage() *Package {
 	if !self.match(token.PACKAGE) {

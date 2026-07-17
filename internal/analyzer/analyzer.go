@@ -33,71 +33,71 @@ func New() *Analyzer {
 	return &Analyzer{Diagnostics: arena, Types: NewTypeChecker(arena)}
 }
 
-func (a *Analyzer) Project(project *composer.Project) (*Result, error) {
+func (self *Analyzer) Project(project *composer.Project) (*Result, error) {
 	if project == nil {
 		return nil, stderrors.New("project is nil")
 	}
-	if a.Diagnostics == nil {
-		a.Diagnostics = diagnostics.New("")
+	if self.Diagnostics == nil {
+		self.Diagnostics = diagnostics.New("")
 	}
-	if a.Types == nil {
-		a.Types = NewTypeChecker(a.Diagnostics)
+	if self.Types == nil {
+		self.Types = NewTypeChecker(self.Diagnostics)
 	} else {
-		a.Types.Diagnostics = a.Diagnostics
+		self.Types.Diagnostics = self.Diagnostics
 	}
 
 	result := &Result{
 		ProjectName: project.Name,
 		Files:       make([]File, 0, len(project.AstFile)),
-		Diagnostics: a.Diagnostics,
+		Diagnostics: self.Diagnostics,
 	}
 
 	for _, astFile := range project.AstFile {
-		if a.Diagnostics.Source == "" {
-			a.Diagnostics.Source = string(astFile.Source)
+		if self.Diagnostics.Source == "" {
+			self.Diagnostics.Source = string(astFile.Source)
 		}
 
 		file := File{
 			Name: astFile.FileName,
 			Path: astFile.Path,
 		}
-		a.checkAST(&file, astFile.Source, astFile.Ast)
+		self.checkAST(&file, astFile.Source, astFile.Ast)
 		result.Files = append(result.Files, file)
 	}
 
 	return result, nil
 }
 
-func (a *Analyzer) checkAST(file *File, source []byte, ast parser.AST) {
+func (self *Analyzer) checkAST(file *File, source []byte, ast parser.AST) {
 	for _, decl := range ast.Decls {
-		a.checkDecl(file, source, decl)
+		self.checkDecl(file, source, decl)
 	}
 }
 
-func (a *Analyzer) checkDecl(file *File, source []byte, decl parser.Decl) {
+func (self *Analyzer) checkDecl(file *File, source []byte, decl parser.Decl) {
 	switch n := decl.(type) {
 	case *parser.LetDecl:
-		a.checkLet(file, source, n.Let)
+		self.checkLet(file, source, n.Let)
 	case *parser.QualifiedDecl:
 		for _, stmt := range n.Body {
-			a.checkStmt(file, source, stmt)
+			self.checkStmt(file, source, stmt)
 		}
 	}
 }
 
-func (a *Analyzer) checkStmt(file *File, source []byte, stmt parser.Stmt) {
+func (self *Analyzer) checkStmt(file *File, source []byte, stmt parser.Stmt) {
 	if n, ok := stmt.(*parser.LetStmt); ok {
-		a.checkLet(file, source, n.Let)
+		self.checkLet(file, source, n.Let)
 	}
 }
 
-func (a *Analyzer) checkLet(file *File, source []byte, let *parser.Let) {
+func (self *Analyzer) checkLet(file *File, source []byte, let *parser.Let) {
 	if let == nil {
 		return
 	}
 	file.LetCount++
 
-	result := a.Types.CheckLet(source, let)
+	result := self.Types.CheckLet(source, let)
 	if result.Checked {
 		file.TypeChecks++
 	}

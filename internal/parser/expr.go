@@ -18,27 +18,27 @@ type InvalidExpr struct {
 	Tok token.Token
 }
 
-func (InvalidExpr) node()                {}
-func (InvalidExpr) expr()                {}
-func (n InvalidExpr) Token() token.Token { return n.Tok }
+func (InvalidExpr) node()                   {}
+func (InvalidExpr) expr()                   {}
+func (self InvalidExpr) Token() token.Token { return self.Tok }
 
 type IdentExpr struct {
 	Tok  token.Token
 	Name token.Token
 }
 
-func (IdentExpr) node()                {}
-func (IdentExpr) expr()                {}
-func (n IdentExpr) Token() token.Token { return n.Tok }
+func (IdentExpr) node()                   {}
+func (IdentExpr) expr()                   {}
+func (self IdentExpr) Token() token.Token { return self.Tok }
 
 type LiteralExpr struct {
 	Tok   token.Token
 	Value token.Token
 }
 
-func (LiteralExpr) node()                {}
-func (LiteralExpr) expr()                {}
-func (n LiteralExpr) Token() token.Token { return n.Tok }
+func (LiteralExpr) node()                   {}
+func (LiteralExpr) expr()                   {}
+func (self LiteralExpr) Token() token.Token { return self.Tok }
 
 type UnaryExpr struct {
 	Tok token.Token
@@ -46,9 +46,9 @@ type UnaryExpr struct {
 	X   *Expr
 }
 
-func (UnaryExpr) node()                {}
-func (UnaryExpr) expr()                {}
-func (n UnaryExpr) Token() token.Token { return n.Tok }
+func (UnaryExpr) node()                   {}
+func (UnaryExpr) expr()                   {}
+func (self UnaryExpr) Token() token.Token { return self.Tok }
 
 type BinaryExpr struct {
 	Tok   token.Token
@@ -57,9 +57,9 @@ type BinaryExpr struct {
 	Right *Expr
 }
 
-func (BinaryExpr) node()                {}
-func (BinaryExpr) expr()                {}
-func (n BinaryExpr) Token() token.Token { return n.Tok }
+func (BinaryExpr) node()                   {}
+func (BinaryExpr) expr()                   {}
+func (self BinaryExpr) Token() token.Token { return self.Tok }
 
 func precedence(kind token.Kind) int {
 	switch kind {
@@ -185,9 +185,9 @@ type Attr struct {
 	Value *Expr         // lang=custom(...)
 }
 
-func (Attr) node()                {}
-func (Attr) expr()                {}
-func (n Attr) Token() token.Token { return n.Tok }
+func (Attr) node()                   {}
+func (Attr) expr()                   {}
+func (self Attr) Token() token.Token { return self.Tok }
 
 type Arg struct {
 	Tok   token.Token
@@ -195,9 +195,9 @@ type Arg struct {
 	Vaule Vaule
 }
 
-func (Arg) node()                {}
-func (Arg) expr()                {}
-func (n Arg) Token() token.Token { return n.Tok }
+func (Arg) node()                   {}
+func (Arg) expr()                   {}
+func (self Arg) Token() token.Token { return self.Tok }
 
 // supports db::sqlite("", conn: "")
 // works only with IDENTIFIER

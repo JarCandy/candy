@@ -31,7 +31,7 @@ func NewTypeChecker(diagnostics *diagnostics.Arena) *TypeChecker {
 	return &TypeChecker{Diagnostics: diagnostics}
 }
 
-func (c *TypeChecker) CheckLet(source []byte, let *parser.Let) TypeCheckResult {
+func (self *TypeChecker) CheckLet(source []byte, let *parser.Let) TypeCheckResult {
 	if let == nil {
 		return TypeCheckResult{}
 	}
@@ -54,8 +54,8 @@ func (c *TypeChecker) CheckLet(source []byte, let *parser.Let) TypeCheckResult {
 		Pos:      let.Name.Pos,
 	}
 
-	if c.Diagnostics != nil {
-		c.Diagnostics.Add(candyerrors.AnalyzerTypeMismatch(span(let.Name), declaredText, gotText))
+	if self.Diagnostics != nil {
+		self.Diagnostics.Add(candyerrors.AnalyzerTypeMismatch(span(let.Name), declaredText, gotText))
 	}
 
 	return TypeCheckResult{Checked: true, Error: &typeErr}
@@ -139,24 +139,24 @@ func tokenPath(source []byte, path []token.Token) typePath {
 	return parts
 }
 
-func (p typePath) empty() bool {
-	return len(p) == 0
+func (self typePath) empty() bool {
+	return len(self) == 0
 }
 
-func (p typePath) equal(other typePath) bool {
-	if len(p) != len(other) {
+func (self typePath) equal(other typePath) bool {
+	if len(self) != len(other) {
 		return false
 	}
-	for i := range p {
-		if p[i] != other[i] {
+	for i := range self {
+		if self[i] != other[i] {
 			return false
 		}
 	}
 	return true
 }
 
-func (p typePath) String() string {
-	return strings.Join(p, "::")
+func (self typePath) String() string {
+	return strings.Join(self, "::")
 }
 
 func tokenText(source []byte, tk token.Token) string {
