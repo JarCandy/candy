@@ -12,19 +12,56 @@ type Executor interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *stdsql.Row
 }
 
-const cacheCliTextSQLTableName = "CacheCliText"
+const TableName = "CacheCliText"
 
-var cacheCliTextSQLColumnNames = []string{"lang", "text", "created_at"}
+const cacheCliTextSQLTableName = "\"CacheCliText\""
 
-var cacheCliTextSQLSearchColumns = []string{"lang", "text"}
+type Column string
 
-const cacheCliTextSQLSelectStatement = "SELECT lang, text, created_at FROM CacheCliText"
+const (
+	ColumnLang         Column = "lang"
+	ColumnOriginalText Column = "original_text"
+	ColumnText         Column = "text"
+	ColumnCreatedAt    Column = "created_at"
+)
 
-const cacheCliTextSQLOrderByColumn = "lang"
-
-var cacheCliTextSQLCreateStatements = []string{
-	"CREATE TABLE IF NOT EXISTS CacheCliText (\\n    lang TEXT NOT NULL,\\n    text TEXT NOT NULL,\\n    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\\n);",
-	"CREATE INDEX IF NOT EXISTS idx_CacheCliText_lang ON CacheCliText (lang);",
+func (column Column) String() string {
+	return string(column)
 }
 
-const cacheCliTextSQLInsertStatement = "INSERT INTO CacheCliText (lang, text, created_at) VALUES (?, ?, ?);"
+func Where(column Column, value any) map[string]any {
+	return map[string]any{string(column): value}
+}
+
+func And(filters ...map[string]any) map[string]any {
+	result := make(map[string]any)
+	for _, filter := range filters {
+		for column, value := range filter {
+			result[column] = value
+		}
+	}
+	return result
+}
+
+var cacheCliTextSQLColumnNames = []string{"\"lang\"", "\"original_text\"", "\"text\"", "\"created_at\""}
+
+var cacheCliTextSQLSearchColumns = []string{"\"lang\"", "\"original_text\"", "\"text\""}
+
+const cacheCliTextSQLSelectStatement = `SELECT "lang", "original_text", "text", "created_at" FROM "CacheCliText"`
+
+const cacheCliTextSQLOrderByColumn = "\"lang\""
+
+var cacheCliTextSQLCreateStatements = []string{
+	`CREATE TABLE IF NOT EXISTS "CacheCliText" (
+    "lang" TEXT NOT NULL,
+    "original_text" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);`,
+	`CREATE INDEX IF NOT EXISTS "idx_CacheCliText_lang" ON "CacheCliText" ("lang");`,
+	`CREATE INDEX IF NOT EXISTS "idx_CacheCliText_original_text" ON "CacheCliText" ("original_text");`,
+}
+
+const cacheCliTextSQLInsertStatement = `INSERT INTO "CacheCliText" ("lang", "original_text", "text", "created_at") VALUES (?, ?, ?, ?);`
+
+var cacheCliTextSQLUpdateColumnIndexes = []int{0, 1, 2, 3}

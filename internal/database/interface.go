@@ -4,9 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	cacheclitext "github.com/CandyCrafts/candy/internal/database/cache/cache_cli_text"
 	cacheclitextsql "github.com/CandyCrafts/candy/internal/database/cache/cache_cli_text/sql"
+	"github.com/CandyCrafts/candy/pkg/branding"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type CLITextEntry = cacheclitext.CacheCliText
@@ -30,8 +36,8 @@ type CLITextCache interface {
 	Delete(ctx context.Context, filters map[string]any) error
 	List(ctx context.Context, limit int, offset int) ([]CLITextEntry, error)
 	Search(ctx context.Context, term string, limit int, offset int) ([]CLITextEntry, error)
-	ReadText(ctx context.Context, lang string) (string, bool, error)
-	WriteText(ctx context.Context, lang string, text string) error
+	ReadText(ctx context.Context, originalText string, lang string) (string, bool, error)
+	WriteText(ctx context.Context, originalText string, lang string, text string) error
 }
 
 type sqlCacheDatabase struct {
@@ -92,8 +98,8 @@ func (self *sqlCLITextCache) Search(ctx context.Context, term string, limit int,
 	return cacheclitextsql.Search(ctx, self.executor, term, limit, offset)
 }
 
-func (self *sqlCLITextCache) ReadText(ctx context.Context, lang string) (string, bool, error) {
-	model, err := self.Get(ctx, map[string]any{"Lang": lang})
+func (self *sqlCLITextCache) ReadText(ctx context.Context, originalText string, lang string) (string, bool, error) {
+	model, err := self.Get(ctx, map[string]any{"OriginalText": originalText, "Lang": lang})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", false, nil
@@ -105,13 +111,14 @@ func (self *sqlCLITextCache) ReadText(ctx context.Context, lang string) (string,
 	return model.Text, true, nil
 }
 
-func (self *sqlCLITextCache) WriteText(ctx context.Context, lang string, text string) error {
+func (self *sqlCLITextCache) WriteText(ctx context.Context, originalText string, lang string, text string) error {
 	entry := CLITextEntry{
-		Lang: lang,
-		Text: text,
+		Lang:         lang,
+		OriginalText: originalText,
+		Text:         text,
 	}
 
-	_, ok, err := self.ReadText(ctx, lang)
+	_, ok, err := self.ReadText(ctx, originalText, lang)
 	if err != nil {
 		return err
 	}
@@ -119,5 +126,28 @@ func (self *sqlCLITextCache) WriteText(ctx context.Context, lang string, text st
 		return self.Create(ctx, entry)
 	}
 
-	return self.Update(ctx, entry, map[string]any{"Lang": lang})
+	return self.Update(ctx, entry, map[string]any{"OriginalText": originalText, "Lang": lang})
+}
+
+func OpenDatabase(name string) (*sql.DB, error) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return nil, fmt.Errorf("get user config directory: %w", err)
+	}
+
+	appDir := filepath.Join(configDir, branding.NameProject)
+
+	if err := os.MkdirAll(appDir, 0755); err != nil {
+		return nil, fmt.Errorf("create app directory: %w", err)
+	}
+
+	path := filepath.Join(appDir, name)
+	fmt.Println(path)
+
+	conn, err := sql.Open("sqlite3", path)
+	if err != nil {
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+
+	return conn, nil
 }

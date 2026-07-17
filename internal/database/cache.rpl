@@ -11,6 +11,7 @@ import (
 @sql(db: "sqlite", table: "CacheCliText")
 model CacheCliText {
 	Lang string @sql(index: true)
+	OriginalText string @sql(index: true)
 	Text string
 	CreatedAt time.Time @sql(default: "now")
 }

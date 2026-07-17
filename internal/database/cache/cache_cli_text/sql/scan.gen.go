@@ -14,6 +14,7 @@ func cacheCliTextSQLDriverValues(model modelpkg.CacheCliText) ([]any, error) {
 	values := make([]any, 0, len(cacheCliTextSQLColumnNames))
 	now := time.Now()
 	values = append(values, model.Lang)
+	values = append(values, model.OriginalText)
 	values = append(values, model.Text)
 	if model.CreatedAt.IsZero() {
 		values = append(values, now)
@@ -33,11 +34,13 @@ func cacheCliTextSQLPlaceholder(columnName string, index int) string {
 func cacheCliTextSQLNormalizeColumnName(name string) (string, bool) {
 	switch strings.TrimSpace(name) {
 	case "Lang", "lang":
-		return "lang", true
+		return "\"lang\"", true
+	case "OriginalText", "original_text":
+		return "\"original_text\"", true
 	case "Text", "text":
-		return "text", true
+		return "\"text\"", true
 	case "CreatedAt", "created_at":
-		return "created_at", true
+		return "\"created_at\"", true
 	default:
 		return "", false
 	}
@@ -64,13 +67,18 @@ func cacheCliTextSQLBuildUpdateAssignments(model modelpkg.CacheCliText, startInd
 	if err != nil {
 		return "", nil, err
 	}
+	cacheCliTextSQLTouchUpdatedAt(values)
+	if len(cacheCliTextSQLUpdateColumnIndexes) == 0 {
+		return "", nil, fmt.Errorf("model CacheCliText has no mutable SQL columns")
+	}
 
 	columns := cacheCliTextSQLColumnNames
-	parts := make([]string, 0, len(columns))
-	args := make([]any, 0, len(columns))
+	parts := make([]string, 0, len(cacheCliTextSQLUpdateColumnIndexes))
+	args := make([]any, 0, len(cacheCliTextSQLUpdateColumnIndexes))
 
-	for index, column := range columns {
-		parts = append(parts, fmt.Sprintf("%s = %s", column, cacheCliTextSQLPlaceholder(column, startIndex+index)))
+	for _, index := range cacheCliTextSQLUpdateColumnIndexes {
+		column := columns[index]
+		parts = append(parts, fmt.Sprintf("%s = %s", column, cacheCliTextSQLPlaceholder(column, startIndex+len(args))))
 		args = append(args, values[index])
 	}
 
@@ -80,16 +88,22 @@ func cacheCliTextSQLBuildUpdateAssignments(model modelpkg.CacheCliText, startInd
 // sqlScan заполняет модель CacheCliText данными из SQL scanner.
 func cacheCliTextSQLScan(scanner interface{ Scan(dest ...any) error }, model *modelpkg.CacheCliText) error {
 	var langValue string
+	var originalTextValue string
 	var textValue string
 	var createdAtValue stdsql.NullTime
-	if err := scanner.Scan(&langValue, &textValue, &createdAtValue); err != nil {
+	if err := scanner.Scan(&langValue, &originalTextValue, &textValue, &createdAtValue); err != nil {
 		return err
 	}
 	model.Lang = langValue
+	model.OriginalText = originalTextValue
 	model.Text = textValue
 	if !createdAtValue.Valid {
 		return fmt.Errorf("required sql time column %q was NULL", "created_at")
 	}
 	model.CreatedAt = createdAtValue.Time
 	return nil
+}
+
+func cacheCliTextSQLTouchUpdatedAt(values []any) {
+	_ = values
 }

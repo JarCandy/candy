@@ -30,7 +30,7 @@ func cacheCliTextSQLBuildWhere(filters map[string]any, startIndex int) (string, 
 			return "", nil, fmt.Errorf("unknown sql filter column %q", key)
 		}
 
-		value, err := cacheCliTextSQLNormalizeFilterValue(column, filters[key])
+		value, err := cacheCliTextSQLNormalizeFilterValue(key, filters[key])
 		if err != nil {
 			return "", nil, err
 		}
@@ -45,6 +45,22 @@ func cacheCliTextSQLBuildWhere(filters map[string]any, startIndex int) (string, 
 	}
 
 	return " WHERE " + strings.Join(parts, " AND "), args, nil
+}
+
+// cacheCliTextSQLAppendPagination безопасно добавляет LIMIT/OFFSET для выбранного SQL-диалекта.
+func cacheCliTextSQLAppendPagination(query string, args []any, limit int, offset int) (string, []any) {
+	if limit > 0 {
+		args = append(args, limit)
+		query += " LIMIT " + cacheCliTextSQLPlaceholder("", len(args))
+	}
+	if offset > 0 && limit <= 0 {
+		query += " LIMIT -1"
+	}
+	if offset > 0 {
+		args = append(args, offset)
+		query += " OFFSET " + cacheCliTextSQLPlaceholder("", len(args))
+	}
+	return query, args
 }
 
 // cacheCliTextSQLQueryMany выполняет SQL-запрос и собирает список моделей CacheCliText.
@@ -162,15 +178,7 @@ func List(ctx context.Context, db Executor, limit int, offset int) ([]modelpkg.C
 		query += " ORDER BY " + orderBy
 	}
 
-	args := make([]any, 0, 2)
-	if limit > 0 {
-		args = append(args, limit)
-		query += " LIMIT " + cacheCliTextSQLPlaceholder("", len(args))
-	}
-	if offset > 0 {
-		args = append(args, offset)
-		query += " OFFSET " + cacheCliTextSQLPlaceholder("", len(args))
-	}
+	query, args := cacheCliTextSQLAppendPagination(query, nil, limit, offset)
 
 	return cacheCliTextSQLQueryMany(ctx, db, query, args...)
 }
@@ -194,14 +202,91 @@ func Search(ctx context.Context, db Executor, term string, limit int, offset int
 	if orderBy := cacheCliTextSQLOrderByColumn; orderBy != "" {
 		query += " ORDER BY " + orderBy
 	}
-	if limit > 0 {
-		args = append(args, limit)
-		query += " LIMIT " + cacheCliTextSQLPlaceholder("", len(args))
-	}
-	if offset > 0 {
-		args = append(args, offset)
-		query += " OFFSET " + cacheCliTextSQLPlaceholder("", len(args))
-	}
+	query, args = cacheCliTextSQLAppendPagination(query, args, limit, offset)
 
 	return cacheCliTextSQLQueryMany(ctx, db, query, args...)
+}
+
+// Store хранит SQL executor для операций модели CacheCliText.
+type Store struct {
+	db Executor
+}
+
+// NewStore создает SQL store для модели CacheCliText.
+func NewStore(db Executor) *Store {
+	return &Store{db: db}
+}
+
+func (store *Store) executor() (Executor, error) {
+	if store == nil || store.db == nil {
+		return nil, fmt.Errorf("sql store executor is nil")
+	}
+	return store.db, nil
+}
+
+func (store *Store) DB() Executor {
+	if store == nil {
+		return nil
+	}
+	return store.db
+}
+
+func (store *Store) WithExecutor(db Executor) *Store {
+	return NewStore(db)
+}
+
+func (store *Store) Init(ctx context.Context) error {
+	db, err := store.executor()
+	if err != nil {
+		return err
+	}
+	return Init(ctx, db)
+}
+
+func (store *Store) Create(ctx context.Context, model modelpkg.CacheCliText) error {
+	db, err := store.executor()
+	if err != nil {
+		return err
+	}
+	return Create(ctx, db, model)
+}
+
+func (store *Store) Get(ctx context.Context, filters map[string]any) (modelpkg.CacheCliText, error) {
+	db, err := store.executor()
+	if err != nil {
+		return modelpkg.CacheCliText{}, err
+	}
+	return Get(ctx, db, filters)
+}
+
+func (store *Store) Update(ctx context.Context, model modelpkg.CacheCliText, filters map[string]any) error {
+	db, err := store.executor()
+	if err != nil {
+		return err
+	}
+	return Update(ctx, db, model, filters)
+}
+
+func (store *Store) Delete(ctx context.Context, filters map[string]any) error {
+	db, err := store.executor()
+	if err != nil {
+		return err
+	}
+	return Delete(ctx, db, filters)
+}
+
+func (store *Store) List(ctx context.Context, limit int, offset int) ([]modelpkg.CacheCliText, error) {
+	db, err := store.executor()
+	if err != nil {
+		return nil, err
+	}
+	return List(ctx, db, limit, offset)
+}
+
+func (store *Store) Search(ctx context.Context, term string, limit int, offset int) ([]modelpkg.CacheCliText, error) {
+	db, err := store.executor()
+	if err != nil {
+		return nil, err
+	}
+	return Search(ctx, db, term, limit, offset)
 }

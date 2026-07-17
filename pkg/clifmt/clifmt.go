@@ -3,9 +3,11 @@ package clifmt
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
+	"github.com/CandyCrafts/candy/internal/database"
 	"github.com/rp1s/colorista"
 	"github.com/rp1s/digreyt/translate"
 )
@@ -13,12 +15,11 @@ import (
 type Text = translate.Translations
 
 type Document struct {
-	Art         string
-	ArtGradient []colorista.GradientPos
-	ShowArt     bool
-	Title       Text
-	Usage       Text
-	Sections    []Section
+	Art      string
+	ShowArt  bool
+	Title    Text
+	Usage    Text
+	Sections []Section
 }
 
 type Section struct {
@@ -33,11 +34,12 @@ type Row struct {
 }
 
 type Renderer struct {
-	Language string
-	Color    *colorista.Colorista
-	Auto     bool
-	Timeout  time.Duration
-	cache    map[string]string
+	Language   string
+	Color      *colorista.Colorista
+	Auto       bool
+	Timeout    time.Duration
+	cache      map[string]string
+	cacheStore database.CLITextCache
 
 	TitleColor   colorista.RGB
 	SectionColor colorista.RGB
@@ -54,6 +56,12 @@ func T(eng string, values ...translate.Translation) Text {
 
 func Lang(language string, text string) translate.Translation {
 	return translate.Translation{Language: language, Text: text}
+}
+
+var defaultCacheStore database.CLITextCache
+
+func SetDefaultCacheStore(store database.CLITextCache) {
+	defaultCacheStore = store
 }
 
 func New(language string) *Renderer {
@@ -75,11 +83,7 @@ func (self *Renderer) Render(doc Document) string {
 
 	var sb strings.Builder
 	if doc.ShowArt && doc.Art != "" {
-		if len(doc.ArtGradient) > 0 {
-			sb.WriteString(self.Color.Gradient(doc.Art, doc.ArtGradient))
-		} else {
-			sb.WriteString(doc.Art)
-		}
+		sb.WriteString(doc.Art)
 		if !strings.HasSuffix(doc.Art, "\n") {
 			sb.WriteString("\n")
 		}
@@ -90,7 +94,7 @@ func (self *Renderer) Render(doc Document) string {
 		sb.WriteString("\n")
 	}
 	if usage := self.text(doc.Usage); usage != "" {
-		sb.WriteString(self.muted(self.text(T("Usage:", Lang("ru", "Использование:"), Lang("uk", "Використання:")))))
+		sb.WriteString(self.muted(self.text(T("Usage:"))))
 		sb.WriteString("\n  ")
 		sb.WriteString(self.normal(usage))
 		sb.WriteString("\n")
@@ -191,6 +195,15 @@ func (self *Renderer) text(values Text) string {
 		return cached
 	}
 
+	if self.cacheStore != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), self.Timeout)
+		defer cancel()
+		if cachedText, ok, err := self.cacheStore.ReadText(ctx, self.originalText(values), self.Language); err == nil && ok {
+			self.cache[key] = cachedText
+			return cachedText
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), self.Timeout)
 	defer cancel()
 
@@ -199,6 +212,13 @@ func (self *Renderer) text(values Text) string {
 		text = translate.ResolveFor(self.Language, translate.Translations(values))
 	}
 	self.cache[key] = text
+	if self.cacheStore != nil {
+		ctx2, cancel2 := context.WithTimeout(context.Background(), self.Timeout)
+		defer cancel2()
+		if err := self.cacheStore.WriteText(ctx2, self.originalText(values), self.Language, text); err != nil {
+			log.Printf("clifmt: failed to write translation cache: %v", err)
+		}
+	}
 	return text
 }
 
@@ -235,6 +255,9 @@ func (self *Renderer) ensureDefaults() {
 	if self.cache == nil {
 		self.cache = make(map[string]string)
 	}
+	if self.cacheStore == nil {
+		self.cacheStore = defaultCacheStore
+	}
 }
 
 func maxLabelWidth(rows []Row, fallback int) int {
@@ -265,6 +288,22 @@ func (self *Renderer) cacheKey(values Text) string {
 		sb.WriteString(value.Text)
 	}
 	return sb.String()
+}
+
+func (self *Renderer) cacheEntryKey(values Text) string {
+	return fmt.Sprintf("%s:%s", normalizeLanguage(self.Language), self.originalText(values))
+}
+
+func (self *Renderer) originalText(values Text) string {
+	for _, value := range values {
+		if normalizeLanguage(value.Language) == normalizeLanguage(translate.DefaultLanguage) {
+			return value.Text
+		}
+	}
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0].Text
 }
 
 func hasLanguage(language string, values Text) bool {

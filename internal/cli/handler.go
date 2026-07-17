@@ -102,60 +102,48 @@ func Install(args []string) error {
 
 func helpDocument() clifmt.Document {
 	return clifmt.Document{
-		Art:         candyArt,
-		ArtGradient: CandyGradientArt,
-		Usage: clifmt.T(
-			"candy [options] <command> [arguments]",
-			clifmt.Lang("ru", "candy [опции] <команда> [аргументы]"),
-		),
+		Art:     candyArt,
+		ShowArt: true,
+		Usage:   clifmt.T("candy [options] <command> [arguments]"),
 		Sections: []clifmt.Section{
 			{
-				Title: clifmt.T("Commands", clifmt.Lang("ru", "Команды")),
+				Title: clifmt.T("Commands"),
 				Rows: []clifmt.Row{
 					{
-						Label: "build <path> [name]",
-						Description: clifmt.T(
-							"Build and analyze a source file.",
-							clifmt.Lang("ru", "Собрать и проанализировать файл."),
-						),
+						Label:       "build <path> [name]",
+						Description: clifmt.T("Build and analyze a source file."),
 						Children: []clifmt.Row{
-							{Label: "<path>", Description: clifmt.T("File path relative to the current directory.", clifmt.Lang("ru", "Путь к файлу относительно текущей директории."))},
-							{Label: "[name]", Description: clifmt.T("Project name; defaults to the file name without extension.", clifmt.Lang("ru", "Имя проекта; по умолчанию имя файла без расширения."))},
+							{Label: "<path>", Description: clifmt.T("File path relative to the current directory.")},
+							{Label: "[name]", Description: clifmt.T("Project name; defaults to the file name without extension.")},
 						},
 					},
 					{
-						Label: "install",
-						Description: clifmt.T(
-							"Install or update packages and tools.",
-							clifmt.Lang("ru", "Установить или обновить пакеты и инструменты."),
-						),
+						Label:       "install",
+						Description: clifmt.T("Install or update packages and tools."),
 						Children: []clifmt.Row{
-							{Label: "--global", Description: clifmt.T("Use the global installation scope.", clifmt.Lang("ru", "Использовать глобальную область установки."))},
-							{Label: "--update", Description: clifmt.T("Update an existing installation.", clifmt.Lang("ru", "Обновить существующую установку."))},
+							{Label: "--global", Description: clifmt.T("Use the global installation scope.")},
+							{Label: "--update", Description: clifmt.T("Update an existing installation.")},
 						},
 					},
 					{
-						Label: "help",
-						Description: clifmt.T(
-							"Show this help message.",
-							clifmt.Lang("ru", "Показать это сообщение справки."),
-						),
+						Label:       "help",
+						Description: clifmt.T("Show this help message."),
 					},
 				},
 			},
 			{
-				Title: clifmt.T("Global Options", clifmt.Lang("ru", "Глобальные опции")),
+				Title: clifmt.T("Global Options"),
 				Rows: []clifmt.Row{
-					{Label: "-h, --help", Description: clifmt.T("Show help and exit.", clifmt.Lang("ru", "Показать справку и выйти."))},
-					{Label: "--lang <lang>, -L <lang>", Description: clifmt.T("Set output language, for example eng or ru.", clifmt.Lang("ru", "Задать язык вывода, например eng или ru."))},
+					{Label: "-h, --help", Description: clifmt.T("Show help and exit.")},
+					{Label: "--lang <lang>, -L <lang>", Description: clifmt.T("Set output language, for example eng or ru.")},
 				},
 			},
 			{
-				Title: clifmt.T("Examples", clifmt.Lang("ru", "Примеры")),
+				Title: clifmt.T("Examples"),
 				Rows: []clifmt.Row{
-					{Label: "candy build examples/models/model.cm", Description: clifmt.T("Build using the file name as project name.", clifmt.Lang("ru", "Собрать, используя имя файла как имя проекта."))},
-					{Label: "candy build src/user.cm user", Description: clifmt.T("Build with an explicit project name.", clifmt.Lang("ru", "Собрать с явным именем проекта."))},
-					{Label: "candy --lang ru help", Description: clifmt.T("Show help in Russian.", clifmt.Lang("ru", "Показать справку на русском."))},
+					{Label: "candy build examples/models/model.cm", Description: clifmt.T("Build using the file name as project name.")},
+					{Label: "candy build src/user.cm user", Description: clifmt.T("Build with an explicit project name.")},
+					{Label: "candy --lang ru help", Description: clifmt.T("Show help in Russian.")},
 				},
 			},
 		},
