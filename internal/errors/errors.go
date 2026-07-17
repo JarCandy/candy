@@ -436,7 +436,23 @@ func ParserMethodReturn(span Span) Error {
 	return parsingError(
 		span,
 		text("Expected method return type", "Ожидался возвращаемый тип метода"),
-		text("after method arguments, expected '-> Type'", "после аргументов метода ожидалось '-> Type'"),
+		text("after '->', expected a type or a parenthesized list of types", "после '->' ожидался тип или список типов в круглых скобках"),
+	)
+}
+
+func ParserMethodReturnSeparator(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected comma or closing parenthesis", "Ожидалась запятая или закрывающая скобка"),
+		text("method return types must be separated by commas", "возвращаемые типы метода должны разделяться запятыми"),
+	)
+}
+
+func ParserMethodReturnsClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing parenthesis for method returns", "Ожидалась закрывающая скобка возвращаемых типов"),
+		text("a method return type list must end with ')'", "список возвращаемых типов метода должен завершаться символом ')'"),
 	)
 }
 

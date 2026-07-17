@@ -10,9 +10,9 @@ type TypeExpr struct {
 	Path []token.Token // last item = Type.Tok
 }
 
-func (TypeExpr) node()                {}
-func (TypeExpr) typ()                 {}
-func (n TypeExpr) Token() token.Token { return n.Tok }
+func (TypeExpr) node()                   {}
+func (TypeExpr) typ()                    {}
+func (self TypeExpr) Token() token.Token { return self.Tok }
 
 func (self *Parser) parseType() *TypeExpr {
 	if !self.match(token.IDENTIFIER) {
@@ -42,9 +42,9 @@ func (self *Parser) parseType() *TypeExpr {
 	}
 }
 
-func (te *TypeExpr) lastPathToken() token.Token {
-	if te == nil || len(te.Path) == 0 {
-		return te.Tok
+func (self *TypeExpr) lastPathToken() token.Token {
+	if self == nil || len(self.Path) == 0 {
+		return self.Tok
 	}
-	return te.Path[len(te.Path)-1]
+	return self.Path[len(self.Path)-1]
 }

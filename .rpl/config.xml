@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <runtimes>
+    <directory>.rpl/attrs</directory>
+  </runtimes>
+  <localization>
+    <language>en</language>
+    <color>true</color>
+  </localization>
+</config>

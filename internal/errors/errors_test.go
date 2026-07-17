@@ -12,8 +12,8 @@ import (
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
-func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return fn(req)
+func (self roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return self(req)
 }
 
 func TestErrorUsesSelectedLanguage(t *testing.T) {

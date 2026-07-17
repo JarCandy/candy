@@ -11,11 +11,11 @@ type LetStmt struct {
 
 func (LetStmt) node() {}
 func (LetStmt) stmt() {}
-func (n LetStmt) Token() token.Token {
-	if n.Let == nil {
+func (self LetStmt) Token() token.Token {
+	if self.Let == nil {
 		return token.Token{}
 	}
-	return n.Let.Token()
+	return self.Let.Token()
 }
 
 func (self *Parser) parseLetStmt() *LetStmt {
@@ -38,11 +38,11 @@ type AttrsStmt struct {
 
 func (AttrsStmt) node() {}
 func (AttrsStmt) stmt() {}
-func (n AttrsStmt) Token() token.Token {
-	if n.Attrs == nil {
+func (self AttrsStmt) Token() token.Token {
+	if self.Attrs == nil {
 		return token.Token{}
 	}
-	return n.Attrs.Token()
+	return self.Attrs.Token()
 }
 
 func (self *Parser) parseAttrsStmt() *AttrsStmt {
@@ -54,16 +54,16 @@ func (self *Parser) parseAttrsStmt() *AttrsStmt {
 }
 
 type MethodStmt struct {
-	Tok    token.Token
-	Name   token.Token
-	Args   []*Arg
-	Return Type
-	Pub    bool
+	Tok     token.Token
+	Name    token.Token
+	Args    []*Arg
+	Returns []Type
+	Pub     bool
 }
 
-func (MethodStmt) node()                {}
-func (MethodStmt) stmt()                {}
-func (n MethodStmt) Token() token.Token { return n.Tok }
+func (MethodStmt) node()                   {}
+func (MethodStmt) stmt()                   {}
+func (self MethodStmt) Token() token.Token { return self.Tok }
 
 func (self *Parser) parseBlockStmt() Stmt {
 	switch self.curTk.Kind {
@@ -218,19 +218,25 @@ func (self *Parser) parseMemberLetTail(tk token.Token, name token.Token, pub boo
 
 func (self *Parser) parseMethodTail(tk token.Token, name token.Token, pub bool) *MethodStmt {
 	method := &MethodStmt{
-		Tok:  tk,
-		Name: name,
-		Pub:  pub,
+		Tok:     tk,
+		Name:    name,
+		Returns: make([]Type, 0),
+		Pub:     pub,
 	}
 
 	method.Args = self.parseArgs()
 
 	if !self.match(token.TRANSITION) {
-		self.report(candyerrors.ParserMethodReturn(span(self.curTk)))
 		self.consumeMemberBoundary()
 		return method
 	}
 	self.next()
+
+	if self.match(token.L_PAREN) {
+		self.parseMethodReturns(method)
+		self.consumeMemberBoundary()
+		return method
+	}
 
 	typ := self.parseType()
 	if typ == nil {
@@ -238,10 +244,54 @@ func (self *Parser) parseMethodTail(tk token.Token, name token.Token, pub bool) 
 		self.consumeMemberBoundary()
 		return method
 	}
-	method.Return = typ
+	method.Returns = append(method.Returns, typ)
 
 	self.consumeMemberBoundary()
 	return method
+}
+
+func (self *Parser) parseMethodReturns(method *MethodStmt) {
+	self.next()
+
+	if self.match(token.R_PAREN) {
+		self.report(candyerrors.ParserMethodReturn(span(self.curTk)))
+		self.next()
+		return
+	}
+
+	for !self.match(token.R_PAREN, token.R_BRACE, token.END, token.EOF) {
+		typ := self.parseType()
+		if typ == nil {
+			self.synchronizeMethodReturns()
+		} else {
+			method.Returns = append(method.Returns, typ)
+		}
+
+		if self.match(token.COMMA) {
+			self.next()
+			continue
+		}
+		if !self.match(token.R_PAREN, token.R_BRACE, token.END, token.EOF) {
+			self.report(candyerrors.ParserMethodReturnSeparator(span(self.curTk)))
+			self.synchronizeMethodReturns()
+			if self.match(token.COMMA) {
+				self.next()
+			}
+		}
+	}
+
+	if self.match(token.R_PAREN) {
+		self.next()
+		return
+	}
+
+	self.report(candyerrors.ParserMethodReturnsClosing(span(self.curTk)))
+}
+
+func (self *Parser) synchronizeMethodReturns() {
+	for !self.match(token.COMMA, token.R_PAREN, token.R_BRACE, token.END, token.EOF) {
+		self.next()
+	}
 }
 
 func (self *Parser) consumeMemberBoundary() {
