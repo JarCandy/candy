@@ -811,12 +811,94 @@ go::impl User {
 	if literal(p, method.Name) != "banned" {
 		t.Fatalf("expected method name banned, got %q", literal(p, method.Name))
 	}
-	ret, ok := method.Return.(*TypeExpr)
+	if len(method.Returns) != 1 {
+		t.Fatalf("expected one method return type, got %d", len(method.Returns))
+	}
+	ret, ok := method.Returns[0].(*TypeExpr)
 	if !ok {
-		t.Fatalf("expected method return type, got %T", method.Return)
+		t.Fatalf("expected method return type, got %T", method.Returns[0])
 	}
 	if got := tokenLiterals(p, ret.Path); !equalStrings(got, []string{"go", "type", "error"}) {
 		t.Fatalf("expected return path [go type error], got %#v", got)
+	}
+}
+
+func TestRunParsesMethodWithoutReturnType(t *testing.T) {
+	p := New([]byte(`go::impl User {
+    pub banned()
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	impl := ast.Decls[0].(*QualifiedDecl)
+	method := impl.Body[0].(*MethodStmt)
+	if len(method.Returns) != 0 {
+		t.Fatalf("expected no return types, got %d", len(method.Returns))
+	}
+}
+
+func TestRunParsesMethodReturnTypeList(t *testing.T) {
+	p := New([]byte(`go::impl User {
+    pub banned() -> (go::type::error, go::type::error),
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	impl := ast.Decls[0].(*QualifiedDecl)
+	method := impl.Body[0].(*MethodStmt)
+	if len(method.Returns) != 2 {
+		t.Fatalf("expected two return types, got %d", len(method.Returns))
+	}
+	for i, typ := range method.Returns {
+		ret, ok := typ.(*TypeExpr)
+		if !ok {
+			t.Fatalf("expected return %d to be a type path, got %T", i, typ)
+		}
+		if got := tokenLiterals(p, ret.Path); !equalStrings(got, []string{"go", "type", "error"}) {
+			t.Fatalf("expected return %d path [go type error], got %#v", i, got)
+		}
+	}
+}
+
+func TestRunReportsEmptyMethodReturnTypeList(t *testing.T) {
+	p := New([]byte(`go::impl User {
+    pub banned() -> (),
+}`), "test.cm")
+	_, err := p.Run()
+
+	if err == nil {
+		t.Fatal("expected empty return type list error")
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected method return type" {
+		t.Fatalf("expected method return diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestRunRecoversAfterUnclosedMethodReturnTypeList(t *testing.T) {
+	p := New([]byte(`go::impl User {
+    pub banned() -> (go::type::error
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err == nil {
+		t.Fatal("expected unclosed return type list error")
+	}
+	impl := ast.Decls[0].(*QualifiedDecl)
+	if len(impl.Body) != 1 {
+		t.Fatalf("expected method to remain in body, got %d statements", len(impl.Body))
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected closing parenthesis for method returns" {
+		t.Fatalf("expected closing return list diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
 	}
 }
 
