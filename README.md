@@ -1,5 +1,10 @@
 # Candy
 
+[![CI](https://github.com/CandyCrafts/candy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CandyCrafts/candy/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/CandyCrafts/candy/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/CandyCrafts/candy/actions/workflows/codeql.yml)
+[![Go 1.25.6](https://img.shields.io/badge/Go-1.25.6-00ADD8?logo=go&logoColor=white)](go.mod)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
+
 Candy - экспериментальный декларативный язык и набор инструментов для описания
 моделей данных, интеграций, поведения генераторов и кода, зависящего от целевого
 языка.
@@ -40,13 +45,11 @@ Candy находится в активной разработке. Сейчас 
 - [Группы публичных объявлений](#группы-публичных-объявлений)
 - [Методы](#методы)
 - [Типы](#типы)
-- [Выражения](#выражения)
 - [Комментарии и разделители](#комментарии-и-разделители)
 - [Диагностика и языки](#диагностика-и-языки)
-- [Просмотр дерева через Lipa](#просмотр-дерева-через-lipa)
 - [Разработка](#разработка)
 - [Участие в проекте](#участие-в-проекте)
-- [Структура проекта](#структура-проекта)
+- [Лицензия и безопасность](#лицензия-и-безопасность)
 - [Текущие ограничения](#текущие-ограничения)
 
 ## Состояние проекта
@@ -509,7 +512,7 @@ make test
 
 ```sh
 go test ./internal/parser
-go test ./internal/analyzer
+go test ./internal/parser/analyzer
 ```
 
 У независимых модулей собственные наборы тестов:
@@ -529,6 +532,18 @@ EDIT.` необходимо перегенерировать, а не измен
 [CONTRIBUTING.md](CONTRIBUTING.md). Для генерации базы данных проект использует
 RPL `0.7.2`.
 
+Для ошибок и предложений используйте
+[GitHub Issues](https://github.com/CandyCrafts/candy/issues), а вопросы по
+использованию и разработке задавайте в
+[Discussions](https://github.com/CandyCrafts/candy/discussions).
+
+## Лицензия и безопасность
+
+Candy распространяется по лицензии [GNU GPL v3.0](LICENSE).
+
+Уязвимости необходимо отправлять приватно по инструкции из
+[SECURITY.md](SECURITY.md). Не публикуйте сведения об уязвимости в обычном Issue.
+Общие вопросы поддержки описаны в [SUPPORT.md](SUPPORT.md).
 
 ## Текущие ограничения
 

@@ -4,7 +4,7 @@
   "description": "Syntax highlighting for the Candy language.",
   "version": "0.1.0",
   "publisher": "candycrafts",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "private": true,
   "repository": {
     "type": "git",

@@ -1,0 +1,83 @@
+name: Bug report
+description: Сообщить о воспроизводимой ошибке Candy.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за отчёт. Для уязвимостей используйте приватную форму из SECURITY.md.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Описание
+      description: Кратко опишите ошибку и её влияние.
+      placeholder: Что произошло?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Версия Candy
+      description: Укажите версию из справки или commit SHA.
+      placeholder: 26.7.18.1 или abc1234
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Окружение
+      description: Операционная система, архитектура и версия Go.
+      placeholder: macOS 15, arm64, Go 1.25.6
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Минимальный пример
+      description: Добавьте минимальный исходный код Candy, который воспроизводит ошибку.
+      render: candy
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: |
+        1. Запустить ...
+        2. Передать ...
+        3. Получить ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое поведение
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактическое поведение и диагностика
+      description: Приложите полный вывод команды без секретов и персональных данных.
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Проверки
+      options:
+        - label: Я проверил открытые Issues и не нашёл дубликат.
+          required: true
+        - label: Отчёт не содержит уязвимость или чувствительные данные.
+          required: true
