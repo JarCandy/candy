@@ -112,7 +112,7 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 	if self.match(token.ASSIGN) {
 		hasDefault = true
 		self.next()
-		if self.match(token.END, token.COMMA, token.R_PAREN, token.R_BRACE, token.EOF) {
+		if self.match(token.ILLEGAL, token.R_PAREN, token.R_BRACE, token.EOF) {
 			self.report(candyerrors.ParserLetValue(span(self.curTk)))
 		} else {
 			decl.Defualt = self.ParseExpr()
@@ -123,10 +123,8 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 		self.report(candyerrors.ParserLetBody(span(self.curTk)))
 	}
 
-	if self.match(token.END) {
+	if self.match(token.ILLEGAL) {
 		self.next()
-	} else if !self.match(token.R_PAREN, token.R_BRACE, token.COMMA, token.EOF) {
-		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
 
 	return decl
@@ -146,7 +144,7 @@ func (self *Parser) parseAttrs() *Attrs {
 	self.next()
 
 	for !self.match(token.ATTR_E, token.EOF) {
-		if self.match(token.COMMA) {
+		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
 		}
@@ -154,7 +152,7 @@ func (self *Parser) parseAttrs() *Attrs {
 		attr := self.parseAttr()
 		if attr == nil {
 			self.synchronizeAttrs()
-			if self.match(token.COMMA) {
+			if self.match(token.ILLEGAL) {
 				self.next()
 			}
 			continue
@@ -162,15 +160,18 @@ func (self *Parser) parseAttrs() *Attrs {
 		attrs.Attrs = append(attrs.Attrs, attr)
 		self.addAttrToMap(attrs, attr)
 
-		if self.match(token.COMMA) {
+		if self.match(token.ILLEGAL) {
 			self.next()
+			continue
+		}
+		if self.matchAttrPathSegment() {
 			continue
 		}
 
 		if !self.match(token.ATTR_E, token.EOF) {
 			self.report(candyerrors.ParserAttrsSeparator(span(self.curTk)))
 			self.synchronizeAttrs()
-			if self.match(token.COMMA) {
+			if self.match(token.ILLEGAL) {
 				self.next()
 			}
 		}
@@ -181,12 +182,6 @@ func (self *Parser) parseAttrs() *Attrs {
 		self.next()
 	} else {
 		self.report(candyerrors.ParserAttrsClosing(span(self.curTk)))
-	}
-
-	if self.match(token.END) {
-		self.next()
-	} else if !self.match(token.EOF) {
-		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
 
 	return attrs

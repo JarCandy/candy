@@ -68,12 +68,29 @@ func typeFromAST(source []byte, typ parser.Type) typePath {
 
 	switch n := typ.(type) {
 	case *parser.TypeExpr:
-		return tokenPath(source, n.Path)
+		return typeExprPath(source, n)
 	case parser.TypeExpr:
-		return tokenPath(source, n.Path)
+		return typeExprPath(source, &n)
 	default:
 		return nil
 	}
+}
+
+func typeExprPath(source []byte, typ *parser.TypeExpr) typePath {
+	if typ == nil {
+		return nil
+	}
+
+	path := make(typePath, 0, len(typ.Modifiers)+len(typ.Path))
+	for _, modifier := range typ.Modifiers {
+		switch modifier.Kind {
+		case parser.TypePointer:
+			path = append(path, "*")
+		case parser.TypeSlice:
+			path = append(path, "[]")
+		}
+	}
+	return append(path, tokenPath(source, typ.Path)...)
 }
 
 func exprType(source []byte, expr *parser.Expr) typePath {
@@ -156,7 +173,20 @@ func (self typePath) equal(other typePath) bool {
 }
 
 func (self typePath) String() string {
-	return strings.Join(self, "::")
+	var result strings.Builder
+	pathStarted := false
+	for _, part := range self {
+		if part == "*" || part == "[]" {
+			result.WriteString(part)
+			continue
+		}
+		if pathStarted {
+			result.WriteString("::")
+		}
+		result.WriteString(part)
+		pathStarted = true
+	}
+	return result.String()
 }
 
 func tokenText(source []byte, tk token.Token) string {

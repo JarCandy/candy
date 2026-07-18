@@ -139,7 +139,7 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 	self.next()
 
 	for !self.match(token.R_PAREN, token.EOF) {
-		if self.match(token.COMMA, token.END) {
+		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
 		}
@@ -159,9 +159,6 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 			self.synchronizeBlock()
 		}
 
-		if self.match(token.COMMA, token.END) {
-			self.next()
-		}
 	}
 
 	if self.match(token.R_PAREN) {
@@ -170,7 +167,7 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 		self.report(candyerrors.ParserPubGroupClosing(span(self.curTk)))
 	}
 
-	if self.match(token.END, token.COMMA) {
+	if self.match(token.ILLEGAL) {
 		self.next()
 	}
 
@@ -201,7 +198,7 @@ func (self *Parser) parseMemberLetTail(tk token.Token, name token.Token, pub boo
 	if self.match(token.ASSIGN) {
 		hasDefault = true
 		self.next()
-		if self.match(token.END, token.COMMA, token.R_PAREN, token.R_BRACE, token.EOF) {
+		if self.match(token.ILLEGAL, token.R_PAREN, token.R_BRACE, token.EOF) {
 			self.report(candyerrors.ParserLetValue(span(self.curTk)))
 		} else {
 			decl.Defualt = self.ParseExpr()
@@ -259,7 +256,12 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 		return
 	}
 
-	for !self.match(token.R_PAREN, token.R_BRACE, token.END, token.EOF) {
+	for !self.match(token.R_PAREN, token.R_BRACE, token.EOF) {
+		if self.match(token.ILLEGAL) {
+			self.next()
+			continue
+		}
+
 		typ := self.parseType()
 		if typ == nil {
 			self.synchronizeMethodReturns()
@@ -267,14 +269,17 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 			method.Returns = append(method.Returns, typ)
 		}
 
-		if self.match(token.COMMA) {
+		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
 		}
-		if !self.match(token.R_PAREN, token.R_BRACE, token.END, token.EOF) {
+		if self.match(token.IDENTIFIER, token.MUL, token.L_BRACK) {
+			continue
+		}
+		if !self.match(token.R_PAREN, token.R_BRACE, token.EOF) {
 			self.report(candyerrors.ParserMethodReturnSeparator(span(self.curTk)))
 			self.synchronizeMethodReturns()
-			if self.match(token.COMMA) {
+			if self.match(token.ILLEGAL) {
 				self.next()
 			}
 		}
@@ -289,17 +294,13 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 }
 
 func (self *Parser) synchronizeMethodReturns() {
-	for !self.match(token.COMMA, token.R_PAREN, token.R_BRACE, token.END, token.EOF) {
+	for !self.match(token.ILLEGAL, token.IDENTIFIER, token.MUL, token.L_BRACK, token.R_PAREN, token.R_BRACE, token.EOF) {
 		self.next()
 	}
 }
 
 func (self *Parser) consumeMemberBoundary() {
-	if self.match(token.END, token.COMMA) {
+	if self.match(token.ILLEGAL) {
 		self.next()
-		return
-	}
-	if !self.match(token.R_PAREN, token.R_BRACE, token.EOF) {
-		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
 }

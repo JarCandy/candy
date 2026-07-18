@@ -254,9 +254,13 @@ func (self *Lexer) NextToken() Token {
 		}
 		return self.tok(R_BRACK)
 	case ';':
-		return self.tok(END)
+		tk := self.tok(ILLEGAL)
+		self.report(candyerrors.LexerUnexpectedSemicolon(span(tk)))
+		return tk
 	case ',':
-		return self.tok(COMMA)
+		tk := self.tok(ILLEGAL)
+		self.report(candyerrors.LexerUnexpectedComma(span(tk)))
+		return tk
 
 	case '"':
 		return self.readString()
@@ -506,7 +510,7 @@ func span(tk Token) candyerrors.Span {
 
 func (self *Lexer) stabilize() {
 	k := map[Kind]bool{
-		PUB: true, USE: true, LET: true,
+		PACKAGE: true, USE: true, PUB: true, LET: true,
 	}
 	for {
 		self.freeze()
@@ -516,7 +520,7 @@ func (self *Lexer) stabilize() {
 			return
 		case tk.Kind == SPACING || tk.Kind == COMMENT || tk.Kind == M_COMMENT:
 			continue
-		case k[tk.Kind], tk.Kind == R_BRACE, tk.Kind == END:
+		case k[tk.Kind], tk.Kind == R_BRACE:
 			self.unfreeze()
 			return
 		}

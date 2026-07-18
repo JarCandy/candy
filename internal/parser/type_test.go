@@ -24,6 +24,45 @@ func TestParseTypePathStopsBeforeAssign(t *testing.T) {
 	}
 }
 
+func TestParseTypeWithPointerAndSliceModifiers(t *testing.T) {
+	p := New([]byte(`*[]*string = "none"`), "test.cm")
+	typ := p.parseType()
+
+	if typ == nil {
+		t.Fatal("expected modified type, got nil")
+	}
+	if got := tokenLiterals(p, typ.Path); !equalStrings(got, []string{"string"}) {
+		t.Fatalf("expected path [string], got %#v", got)
+	}
+	if len(typ.Modifiers) != 3 {
+		t.Fatalf("expected 3 type modifiers, got %d", len(typ.Modifiers))
+	}
+	if typ.Modifiers[0].Kind != TypePointer || typ.Modifiers[1].Kind != TypeSlice || typ.Modifiers[2].Kind != TypePointer {
+		t.Fatalf("expected pointer, slice, pointer modifiers, got %#v", typ.Modifiers)
+	}
+	if literal(p, typ.Modifiers[0].Tok_s) != "*" || literal(p, typ.Modifiers[1].Tok_s) != "[" || literal(p, typ.Modifiers[1].Tok_e) != "]" || literal(p, typ.Modifiers[2].Tok_s) != "*" {
+		t.Fatalf("expected modifier tokens for *([])*, got %#v", typ.Modifiers)
+	}
+	if p.curTk.Kind != token.ASSIGN {
+		t.Fatalf("expected parser to stop at assign, got %s", p.curTk.Kind)
+	}
+}
+
+func TestParseTypeReportsUnclosedSliceModifier(t *testing.T) {
+	p := New([]byte(`[*string`), "test.cm")
+	typ := p.parseType()
+
+	if typ != nil {
+		t.Fatalf("expected nil type, got %#v", typ)
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Expected closing bracket for slice type" {
+		t.Fatalf("expected slice closing diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
 func TestParseTypePathStopsBeforeCallParen(t *testing.T) {
 	p := New([]byte(`User()`), "test.cm")
 	typ := p.parseType()

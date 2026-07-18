@@ -1,9 +1,9 @@
 package parser
 
 import (
+	"os"
 	"testing"
 
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
 	"github.com/CandyCrafts/candy/internal/parser/token"
 	"github.com/CandyCrafts/candy/internal/types"
 )
@@ -25,7 +25,7 @@ func TestParseIdentReturnsPointer(t *testing.T) {
 }
 
 func TestParseArgs(t *testing.T) {
-	p := New([]byte(`("User", limit: 10)`), "test.cm")
+	p := New([]byte(`("User" limit: 10)`), "test.cm")
 	args := p.parseArgs()
 
 	if len(args) != 2 {
@@ -54,7 +54,7 @@ func TestParseArgs(t *testing.T) {
 }
 
 func TestParseAccessAttr(t *testing.T) {
-	p := New([]byte(`db::sqlite("main", table: "User")`), "test.cm")
+	p := New([]byte(`db::sqlite("main" table: "User")`), "test.cm")
 	attr := p.parseAttr()
 
 	if attr == nil {
@@ -153,8 +153,29 @@ func TestParseAttrWithDirectCall(t *testing.T) {
 	}
 }
 
+func TestParseAttrWithMemberAccess(t *testing.T) {
+	p := New([]byte(`go::lib("github.com/google/uuid").NewString()`), "test.cm")
+	attr := p.parseAttr()
+
+	if attr == nil {
+		t.Fatal("expected attr, got nil")
+	}
+	if got := tokenLiterals(p, attr.Path); !equalStrings(got, []string{"go", "lib", "NewString"}) {
+		t.Fatalf("expected path [go lib NewString], got %#v", got)
+	}
+	if got := tokenLiterals(p, attr.Separators); !equalStrings(got, []string{"::", "."}) {
+		t.Fatalf("expected separators [:: .], got %#v", got)
+	}
+	if len(attr.Args) != 1 {
+		t.Fatalf("expected one flattened argument, got %d", len(attr.Args))
+	}
+	if p.curTk.Kind != token.EOF {
+		t.Fatalf("expected EOF after member call, got %s", p.curTk.Kind)
+	}
+}
+
 func TestParseAttrAssignmentCreatesMapEntry(t *testing.T) {
-	p := New([]byte(`#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];`), "test.cm")
+	p := New([]byte(`#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")]`), "test.cm")
 	attrs := p.parseAttrs()
 
 	if attrs == nil {
@@ -202,7 +223,7 @@ func TestParseAccessExpressionWithCallChain(t *testing.T) {
 }
 
 func TestParseAttrs(t *testing.T) {
-	p := New([]byte(`#[db::sqlite::table::("User")];`), "test.cm")
+	p := New([]byte(`#[db::sqlite::table::("User")]`), "test.cm")
 	attrs := p.parseAttrs()
 
 	if attrs == nil {
@@ -228,21 +249,48 @@ func TestParseAttrs(t *testing.T) {
 	}
 }
 
-func TestParseAttrsReportsOptionalSemicolonWarning(t *testing.T) {
+func TestParseAttrsWithoutSeparators(t *testing.T) {
+	p := New([]byte(`#[db::index cache::enabled(true)]`), "test.cm")
+	attrs := p.parseAttrs()
+
+	if attrs == nil || len(attrs.Attrs) != 2 {
+		t.Fatalf("expected two attrs, got %#v", attrs)
+	}
+	if got := tokenLiterals(p, attrs.Attrs[0].Path); !equalStrings(got, []string{"db", "index"}) {
+		t.Fatalf("expected first attr path [db index], got %#v", got)
+	}
+	if got := tokenLiterals(p, attrs.Attrs[1].Path); !equalStrings(got, []string{"cache", "enabled"}) {
+		t.Fatalf("expected second attr path [cache enabled], got %#v", got)
+	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no diagnostics, got %v", p.Diagnostics.Errors)
+	}
+}
+
+func TestParseAttrsRejectsComma(t *testing.T) {
+	p := New([]byte(`#[db::index, cache::enabled]`), "test.cm")
+	attrs := p.parseAttrs()
+
+	if attrs == nil || len(attrs.Attrs) != 2 {
+		t.Fatalf("expected parser to recover two attrs, got %#v", attrs)
+	}
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected comma diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestParseAttrsDoesNotRequireTerminator(t *testing.T) {
 	p := New([]byte(`#[db::sqlite] let name: User`), "test.cm")
 	attrs := p.parseAttrs()
 
 	if attrs == nil {
 		t.Fatal("expected attrs, got nil")
 	}
-	if len(p.Diagnostics.Errors) != 1 {
-		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
-	}
-	if p.Diagnostics.Errors[0].Severity != candyerrors.SeverityWarning {
-		t.Fatalf("expected warning, got %s", p.Diagnostics.Errors[0].Severity)
-	}
-	if p.Diagnostics.Errors[0].Arrow != "Optional semicolon is missing" {
-		t.Fatalf("expected optional semicolon warning, got %q", p.Diagnostics.Errors[0].Arrow)
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no diagnostics, got %v", p.Diagnostics.Errors)
 	}
 	if p.curTk.Kind != token.LET {
 		t.Fatalf("expected parser to stop at LET, got %s", p.curTk.Kind)
@@ -265,7 +313,7 @@ func TestParseAttrsReportsMissingClosingBracket(t *testing.T) {
 }
 
 func TestRunParsesAttrsDeclarations(t *testing.T) {
-	p := New([]byte(`#[db::sqlite::table::("User")];`), "test.cm")
+	p := New([]byte(`#[db::sqlite::table::("User")]`), "test.cm")
 	ast, err := p.Run()
 
 	if err != nil {
@@ -287,7 +335,7 @@ func TestRunParsesAttrsDeclarations(t *testing.T) {
 }
 
 func TestParseAttrsStmt(t *testing.T) {
-	p := New([]byte(`#[db::sqlite::index];`), "test.cm")
+	p := New([]byte(`#[db::sqlite::index]`), "test.cm")
 	stmt := p.parseAttrsStmt()
 
 	if stmt == nil {
@@ -304,18 +352,18 @@ func TestParseAttrsStmt(t *testing.T) {
 	}
 }
 
-func TestParseArgsReportsDiagnostic(t *testing.T) {
-	p := New([]byte(`(,)`), "test.cm")
+func TestParseArgsRejectsComma(t *testing.T) {
+	p := New([]byte(`("one", "two")`), "test.cm")
 	args := p.parseArgs()
 
-	if len(args) != 0 {
-		t.Fatalf("expected empty args, got %#v", args)
+	if len(args) != 2 {
+		t.Fatalf("expected parser to recover two args, got %#v", args)
 	}
 	if len(p.Diagnostics.Errors) != 1 {
 		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
 	}
-	if p.Diagnostics.Errors[0].CodeName != "ParsingError" {
-		t.Fatalf("expected ParsingError, got %s", p.Diagnostics.Errors[0].CodeName)
+	if p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected comma diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
 	}
 }
 
@@ -331,6 +379,21 @@ func TestParseArgsRecoversAfterInvalidArg(t *testing.T) {
 	}
 	if len(p.Diagnostics.Errors) != 1 {
 		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected comma diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestParseArgsWithoutSeparators(t *testing.T) {
+	p := New([]byte(`("User" nullable: false limit: 10)`), "test.cm")
+	args := p.parseArgs()
+
+	if len(args) != 3 {
+		t.Fatalf("expected three args, got %d", len(args))
+	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no diagnostics, got %v", p.Diagnostics.Errors)
 	}
 }
 
@@ -379,7 +442,7 @@ func TestParseAccessAttrReportsEOFPathSegment(t *testing.T) {
 	}
 }
 
-func TestRunReportsUnexpectedTopLevelToken(t *testing.T) {
+func TestRunRejectsSemicolon(t *testing.T) {
 	p := New([]byte(`;`), "test.cm")
 	_, err := p.Run()
 
@@ -389,8 +452,26 @@ func TestRunReportsUnexpectedTopLevelToken(t *testing.T) {
 	if len(p.Diagnostics.Errors) != 1 {
 		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
 	}
-	if p.Diagnostics.Errors[0].CodeName != "ParsingError" {
-		t.Fatalf("expected ParsingError, got %s", p.Diagnostics.Errors[0].CodeName)
+	if p.Diagnostics.Errors[0].CodeName != "LexerIllegal" {
+		t.Fatalf("expected LexerIllegal, got %s", p.Diagnostics.Errors[0].CodeName)
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Semicolons are not supported" {
+		t.Fatalf("expected semicolon diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestRunRejectsTopLevelComma(t *testing.T) {
+	p := New([]byte(`package("main"), let name = "Candy"`), "test.cm")
+	ast, err := p.Run()
+
+	if err == nil {
+		t.Fatal("expected comma diagnostic error")
+	}
+	if len(ast.Decls) != 2 {
+		t.Fatalf("expected parser to recover two declarations, got %d", len(ast.Decls))
+	}
+	if len(p.Diagnostics.Errors) != 1 || p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected unsupported-comma diagnostic, got %v", p.Diagnostics.Errors)
 	}
 }
 
@@ -424,41 +505,41 @@ func TestParsePackageReportsLongPath(t *testing.T) {
 	}
 }
 
-func TestParsePackageReportsOptionalSemicolonWarning(t *testing.T) {
+func TestParsePackageDoesNotRequireTerminator(t *testing.T) {
 	p := New([]byte(`package use`), "test.cm")
 	decl := p.parsePackage()
 
 	if decl == nil {
 		t.Fatal("expected package decl, got nil")
 	}
-	if len(p.Diagnostics.Errors) != 1 {
-		t.Fatalf("expected 1 diagnostic, got %d", len(p.Diagnostics.Errors))
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no diagnostics, got %v", p.Diagnostics.Errors)
 	}
-	if p.Diagnostics.Errors[0].Severity != candyerrors.SeverityWarning {
-		t.Fatalf("expected warning, got %s", p.Diagnostics.Errors[0].Severity)
-	}
-	if p.Diagnostics.Errors[0].Arrow != "Optional semicolon is missing" {
-		t.Fatalf("expected optional semicolon warning, got %q", p.Diagnostics.Errors[0].Arrow)
+	if p.curTk.Kind != token.USE {
+		t.Fatalf("expected parser to stop at USE, got %s", p.curTk.Kind)
 	}
 }
 
-func TestParsePackageConsumesOptionalSemicolon(t *testing.T) {
+func TestParsePackageRejectsSemicolon(t *testing.T) {
 	p := New([]byte(`package;`), "test.cm")
 	decl := p.parsePackage()
 
 	if decl == nil {
 		t.Fatal("expected package decl, got nil")
 	}
-	if len(p.Diagnostics.Errors) != 0 {
-		t.Fatalf("expected no diagnostics, got %d", len(p.Diagnostics.Errors))
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(p.Diagnostics.Errors))
 	}
-	if p.curTk.Kind != token.EOF {
-		t.Fatalf("expected EOF after optional semicolon, got %s", p.curTk.Kind)
+	if p.Diagnostics.Errors[0].Arrow != "Semicolons are not supported" {
+		t.Fatalf("expected semicolon diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
+	}
+	if p.curTk.Kind != token.ILLEGAL {
+		t.Fatalf("expected parser to stop at illegal semicolon, got %s", p.curTk.Kind)
 	}
 }
 
 func TestParseUseImportsWithAlias(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" -> d,)`), "test.cm")
+	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" -> d)`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -483,7 +564,7 @@ func TestParseUseImportsWithAlias(t *testing.T) {
 }
 
 func TestParseUseImportsWithoutAlias(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db", "github.com/CandyCrafts/plugins/http")`), "test.cm")
+	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" "github.com/CandyCrafts/plugins/http")`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -500,8 +581,20 @@ func TestParseUseImportsWithoutAlias(t *testing.T) {
 	}
 }
 
+func TestParseUseRejectsComma(t *testing.T) {
+	p := New([]byte(`use ("db", "http")`), "test.cm")
+	decl := p.parseUse()
+
+	if decl == nil || len(decl.Imports) != 2 {
+		t.Fatalf("expected parser to recover two imports, got %#v", decl)
+	}
+	if len(p.Diagnostics.Errors) != 1 || p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected unsupported-comma diagnostic, got %v", p.Diagnostics.Errors)
+	}
+}
+
 func TestParseUseReportsInvalidImportPath(t *testing.T) {
-	p := New([]byte(`use (123, "ok")`), "test.cm")
+	p := New([]byte(`use (123 "ok")`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -539,6 +632,48 @@ func TestParseUseReportsMissingClosingParen(t *testing.T) {
 	}
 }
 
+func TestParseUseWithAsAlias(t *testing.T) {
+	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" as db)`), "test.cm")
+	decl := p.parseUse()
+
+	if decl == nil || len(decl.Imports) != 1 {
+		t.Fatalf("expected one use import, got %#v", decl)
+	}
+	item := decl.Imports[0]
+	if item.Alias == nil || literal(p, *item.Alias) != "db" {
+		t.Fatalf("expected alias db, got %#v", item.Alias)
+	}
+	if link, ok := decl.AliasMap[*item.Alias]; !ok || literal(p, link) != "github.com/CandyCrafts/plugins/db" {
+		t.Fatalf("expected alias map entry, got %#v", decl.AliasMap)
+	}
+}
+
+func TestRunParsesStandaloneLetSetting(t *testing.T) {
+	p := New([]byte(`let lang = custom("github.com/CandyCrafts/LangEngines/Go@latest")`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 1 {
+		t.Fatalf("expected one declaration, got %d", len(ast.Decls))
+	}
+	setting, ok := ast.Decls[0].(*LetDecl)
+	if !ok || setting.Let == nil {
+		t.Fatalf("expected let declaration, got %T", ast.Decls[0])
+	}
+	if literal(p, setting.Name) != "lang" {
+		t.Fatalf("expected setting name lang, got %q", literal(p, setting.Name))
+	}
+	value, ok := (*setting.Defualt).(*Attr)
+	if !ok {
+		t.Fatalf("expected setting attr value, got %T", *setting.Defualt)
+	}
+	if got := tokenLiterals(p, value.Path); !equalStrings(got, []string{"custom"}) {
+		t.Fatalf("expected custom setting value, got %#v", got)
+	}
+}
+
 func TestParseUseReportsEOFAfterAliasArrow(t *testing.T) {
 	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" ->`), "test.cm")
 	decl := p.parseUse()
@@ -561,7 +696,7 @@ func TestParseUseReportsEOFAfterAliasArrow(t *testing.T) {
 }
 
 func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
-	p := New([]byte(`pub let name: db::User = "Candy";`), "test.cm")
+	p := New([]byte(`pub let name: db::User = "Candy"`), "test.cm")
 	decl := p.parseLetVar(true)
 
 	if decl == nil {
@@ -592,7 +727,7 @@ func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
 		t.Fatalf("expected default Candy, got %q", literal(p, value.Value))
 	}
 	if p.curTk.Kind != token.EOF {
-		t.Fatalf("expected EOF after semicolon, got %s", p.curTk.Kind)
+		t.Fatalf("expected EOF after declaration, got %s", p.curTk.Kind)
 	}
 }
 
@@ -663,7 +798,7 @@ func TestParseLetVarReportsMissingBody(t *testing.T) {
 }
 
 func TestParseLetVarReportsMissingDefaultValue(t *testing.T) {
-	p := New([]byte(`let name = ;`), "test.cm")
+	p := New([]byte(`let name =`), "test.cm")
 	decl := p.parseLetVar(true)
 
 	if decl == nil {
@@ -732,25 +867,25 @@ func TestRunParsesPubLetGroup(t *testing.T) {
 }
 
 func TestRunParsesModelAndImplSyntax(t *testing.T) {
-	source := []byte(`package("main");
+	source := []byte(`package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" -> d,
+    "github.com/CandyCrafts/plugins/db" as d
 )
 
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];
+#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")]
 
-#[db::sqlite::table("User")];
+#[db::sqlite::table("User")]
 go::model User {
-    #[db::sqlite::index];
+    #[db::sqlite::index]
     pub Id: strings = go::lib("github.com/google/uuid")::NewString()
-    pub Name: string = "none",
+    pub Name: string = "none"
 }
 
-#[comoser::file::no_edit(true)];
+#[composer::file::no_edit(true)]
 go::impl User {
-    #[db::go::func::delete_rec];
-    pub banned() -> go::type::error,
+    #[db::go::func::delete_rec]
+    pub banned() -> go::type::error
 }`)
 	p := New(source, "test.cm")
 	ast, err := p.Run()
@@ -823,6 +958,66 @@ go::impl User {
 	}
 }
 
+func TestRunParsesCurrentSyntaxExample(t *testing.T) {
+	source, readErr := os.ReadFile("../../examples/models/1-model.cm")
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	p := New(source, "examples/models/1-model.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected syntax example to parse, got %v", err)
+	}
+	if len(ast.Decls) != 7 {
+		t.Fatalf("expected 7 top-level declarations, got %d", len(ast.Decls))
+	}
+	setting, ok := ast.Decls[2].(*LetDecl)
+	if !ok || literal(p, setting.Name) != "lang" {
+		t.Fatalf("expected lang let declaration, got %T", ast.Decls[2])
+	}
+
+	use, ok := ast.Decls[1].(*Use)
+	if !ok || len(use.Imports) != 2 {
+		t.Fatalf("expected two imports, got %T %#v", ast.Decls[1], ast.Decls[1])
+	}
+	if use.Imports[0].Alias == nil || literal(p, *use.Imports[0].Alias) != "db" {
+		t.Fatalf("expected db alias, got %#v", use.Imports[0].Alias)
+	}
+
+	model, ok := ast.Decls[4].(*QualifiedDecl)
+	if !ok {
+		t.Fatalf("expected model declaration, got %T", ast.Decls[4])
+	}
+	if len(model.Body) != 3 {
+		t.Fatalf("expected three model fields, got %d", len(model.Body))
+	}
+	name := model.Body[1].(*LetStmt)
+	nameType := name.Type.(*TypeExpr)
+	if len(nameType.Modifiers) != 3 || nameType.Modifiers[0].Kind != TypePointer || nameType.Modifiers[1].Kind != TypeSlice || nameType.Modifiers[2].Kind != TypePointer {
+		t.Fatalf("expected name type *([])*string, got %#v", nameType.Modifiers)
+	}
+
+	id := model.Body[0].(*LetStmt)
+	idDefault, ok := (*id.Defualt).(*Attr)
+	if !ok {
+		t.Fatalf("expected id member call, got %T", *id.Defualt)
+	}
+	if got := tokenLiterals(p, idDefault.Separators); !equalStrings(got, []string{"::", "."}) {
+		t.Fatalf("expected namespace and member separators, got %#v", got)
+	}
+
+	impl, ok := ast.Decls[6].(*QualifiedDecl)
+	if !ok || len(impl.Body) != 3 {
+		t.Fatalf("expected attrs and two methods in impl, got %T %#v", ast.Decls[6], ast.Decls[6])
+	}
+	banned := impl.Body[1].(*MethodStmt)
+	validate := impl.Body[2].(*MethodStmt)
+	if len(banned.Returns) != 0 || len(validate.Returns) != 2 {
+		t.Fatalf("expected zero and two return types, got %d and %d", len(banned.Returns), len(validate.Returns))
+	}
+}
+
 func TestRunParsesMethodWithoutReturnType(t *testing.T) {
 	p := New([]byte(`go::impl User {
     pub banned()
@@ -839,9 +1034,32 @@ func TestRunParsesMethodWithoutReturnType(t *testing.T) {
 	}
 }
 
+func TestRunParsesMethodsWithoutSeparators(t *testing.T) {
+	p := New([]byte(`go::impl User {
+    pub save()
+    pub banned() -> go::type::error
+    pub validate() -> (go::type::error go::type::error)
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	impl := ast.Decls[0].(*QualifiedDecl)
+	if len(impl.Body) != 3 {
+		t.Fatalf("expected three methods, got %d", len(impl.Body))
+	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no separator diagnostics, got %v", p.Diagnostics.Errors)
+	}
+	if len(impl.Body[0].(*MethodStmt).Returns) != 0 || len(impl.Body[1].(*MethodStmt).Returns) != 1 || len(impl.Body[2].(*MethodStmt).Returns) != 2 {
+		t.Fatal("expected methods with zero, one, and two return types")
+	}
+}
+
 func TestRunParsesMethodReturnTypeList(t *testing.T) {
 	p := New([]byte(`go::impl User {
-    pub banned() -> (go::type::error, go::type::error),
+    pub banned() -> (go::type::error go::type::error)
 }`), "test.cm")
 	ast, err := p.Run()
 
@@ -864,9 +1082,27 @@ func TestRunParsesMethodReturnTypeList(t *testing.T) {
 	}
 }
 
+func TestRunRejectsCommaInMethodReturnTypeList(t *testing.T) {
+	p := New([]byte(`go::impl User {
+    pub banned() -> (go::type::error, go::type::error)
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err == nil {
+		t.Fatal("expected comma diagnostic error")
+	}
+	method := ast.Decls[0].(*QualifiedDecl).Body[0].(*MethodStmt)
+	if len(method.Returns) != 2 {
+		t.Fatalf("expected parser to recover two return types, got %d", len(method.Returns))
+	}
+	if len(p.Diagnostics.Errors) != 1 || p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected unsupported-comma diagnostic, got %v", p.Diagnostics.Errors)
+	}
+}
+
 func TestRunReportsEmptyMethodReturnTypeList(t *testing.T) {
 	p := New([]byte(`go::impl User {
-    pub banned() -> (),
+    pub banned() -> ()
 }`), "test.cm")
 	_, err := p.Run()
 
@@ -933,12 +1169,60 @@ func TestRunParsesPubMemberGroupInModel(t *testing.T) {
 			t.Fatalf("expected body %d to be public let, got %#v", i, let.Let)
 		}
 	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no separator diagnostics, got %v", p.Diagnostics.Errors)
+	}
+}
+
+func TestRunParsesPubMemberGroupWithLetWithoutSeparators(t *testing.T) {
+	p := New([]byte(`go::model Settings {
+    pub (
+        let host: string = "localhost"
+        let port: int = 8080
+    )
+}`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	model := ast.Decls[0].(*QualifiedDecl)
+	if len(model.Body) != 2 {
+		t.Fatalf("expected two model fields, got %d", len(model.Body))
+	}
+	if literal(p, model.Body[0].(*LetStmt).Name) != "host" || literal(p, model.Body[1].(*LetStmt).Name) != "port" {
+		t.Fatal("expected host and port fields")
+	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no separator diagnostics, got %v", p.Diagnostics.Errors)
+	}
+}
+
+func TestRunParsesPubDeclGroupWithoutSeparators(t *testing.T) {
+	p := New([]byte(`pub (
+    let host: string = "localhost"
+    let port: int = 8080
+)`), "test.cm")
+	ast, err := p.Run()
+
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(ast.Decls) != 2 {
+		t.Fatalf("expected two declarations, got %d", len(ast.Decls))
+	}
+	if literal(p, ast.Decls[0].(*LetDecl).Name) != "host" || literal(p, ast.Decls[1].(*LetDecl).Name) != "port" {
+		t.Fatal("expected host and port declarations")
+	}
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no separator diagnostics, got %v", p.Diagnostics.Errors)
+	}
 }
 
 func TestRunParsesSingleTokenQualifiedDeclPath(t *testing.T) {
 	p := New([]byte(`model User {
     pub (
-        name: type = expr,
+        name: type = expr
     )
 }`), "test.cm")
 	ast, err := p.Run()
@@ -964,7 +1248,7 @@ func TestRunParsesSingleTokenQualifiedDeclPath(t *testing.T) {
 	}
 }
 
-func TestRunParsesPubMemberGroupWithTrailingComma(t *testing.T) {
+func TestRunRejectsCommaInPubMemberGroup(t *testing.T) {
 	p := New([]byte(`go::model Name {
     pub (
         name: type = expr,
@@ -972,8 +1256,8 @@ func TestRunParsesPubMemberGroupWithTrailingComma(t *testing.T) {
 }`), "test.cm")
 	ast, err := p.Run()
 
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
+	if err == nil {
+		t.Fatal("expected comma diagnostic error")
 	}
 	if len(ast.Decls) != 1 {
 		t.Fatalf("expected 1 decl, got %d", len(ast.Decls))
@@ -1001,8 +1285,11 @@ func TestRunParsesPubMemberGroupWithTrailingComma(t *testing.T) {
 	if literal(p, field.Name) != "name" {
 		t.Fatalf("expected field name, got %q", literal(p, field.Name))
 	}
-	if p.Diagnostics.HasFatalErrors() {
-		t.Fatalf("expected no fatal diagnostics, got %v", p.Diagnostics)
+	if len(p.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(p.Diagnostics.Errors))
+	}
+	if p.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected comma diagnostic, got %q", p.Diagnostics.Errors[0].Arrow)
 	}
 }
 
@@ -1045,18 +1332,19 @@ func TestParseLetStmtRejectsPub(t *testing.T) {
 	}
 }
 
-func TestRunDoesNotFailOnWarningsOnly(t *testing.T) {
-	p := New([]byte(`package use ("github.com/CandyCrafts/plugins/db")`), "test.cm")
-	_, err := p.Run()
+func TestRunParsesAdjacentTopLevelDeclarations(t *testing.T) {
+	p := New([]byte(`package("main")
+let name = "Candy"`), "test.cm")
+	ast, err := p.Run()
 
 	if err != nil {
-		t.Fatalf("expected nil error for warning-only diagnostics, got %v", err)
+		t.Fatalf("expected nil error, got %v", err)
 	}
-	if len(p.Diagnostics.Errors) != 1 {
-		t.Fatalf("expected 1 warning diagnostic, got %d", len(p.Diagnostics.Errors))
+	if len(ast.Decls) != 2 {
+		t.Fatalf("expected two declarations, got %d", len(ast.Decls))
 	}
-	if p.Diagnostics.Errors[0].Severity != candyerrors.SeverityWarning {
-		t.Fatalf("expected warning, got %s", p.Diagnostics.Errors[0].Severity)
+	if len(p.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no diagnostics, got %v", p.Diagnostics.Errors)
 	}
 }
 

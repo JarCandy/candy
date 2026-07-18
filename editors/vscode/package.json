@@ -1,0 +1,64 @@
+{
+  "name": "candy-language-support",
+  "displayName": "Candy Language Support",
+  "description": "Syntax highlighting for the Candy language.",
+  "version": "0.1.0",
+  "publisher": "candycrafts",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CandyCrafts/candy.git",
+    "directory": "editors/vscode"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "candy",
+    "language",
+    "syntax",
+    "highlighting"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "candy",
+        "aliases": [
+          "Candy",
+          "candy"
+        ],
+        "extensions": [
+          ".cm",
+          ".candy"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "candy",
+        "scopeName": "source.candy",
+        "path": "./syntaxes/candy.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "check": "tsc -p ./ --noEmit && node ./scripts/check-grammar.mjs",
+    "package": "vsce package",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^7.0.2",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
+  }
+}

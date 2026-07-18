@@ -4,3 +4,8 @@
 /bin/
 pkg/digreyt/
 pkg/lipa/
+editors/
+!editors/
+editors/*
+!editors/vscode/
+!editors/vscode/**

@@ -3,6 +3,7 @@ PKG ?= ./cmd/release
 BIN_DIR ?= bin
 INSTALL_DIR ?= $(HOME)/.local/bin
 LDFLAGS ?=
+RELEASE_BUILD := $(findstring r,$(firstword $(MAKEFLAGS)))
 MACOS_PLATFORMS ?= darwin/amd64 darwin/arm64
 LINUX_PLATFORMS ?= linux/386 linux/amd64 linux/arm linux/arm64 linux/riscv64
 WINDOWS_PLATFORMS ?= windows/386 windows/amd64 windows/arm windows/arm64
@@ -13,6 +14,7 @@ PLATFORMS ?= $(MACOS_PLATFORMS) $(LINUX_PLATFORMS) $(WINDOWS_PLATFORMS)
 all: build-all
 
 build:
+	$(if $(RELEASE_BUILD),@go run ./cmd/version "$(CURDIR)/pkg/branding/version.gen.go")
 	@mkdir -p $(BIN_DIR)
 	@echo "building $(BIN_DIR)/$(APP)"
 	@go build -trimpath -ldflags "$(LDFLAGS)" -o "$(BIN_DIR)/$(APP)" $(PKG)

@@ -22,7 +22,7 @@ func TestLoadResolvesBuildPathFromWorkingDirectory(t *testing.T) {
 	}
 
 	sourcePath := filepath.Join(srcDir, "user.cm")
-	if err := os.WriteFile(sourcePath, []byte(`package("main");`), 0o644); err != nil {
+	if err := os.WriteFile(sourcePath, []byte(`package("main")`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,7 +71,7 @@ func TestLoadKeepsExplicitProjectName(t *testing.T) {
 
 	tempDir := t.TempDir()
 	sourcePath := filepath.Join(tempDir, "main.cm")
-	if err := os.WriteFile(sourcePath, []byte(`package("main");`), 0o644); err != nil {
+	if err := os.WriteFile(sourcePath, []byte(`package("main")`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

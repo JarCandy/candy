@@ -141,7 +141,7 @@ func (self *Parser) synchronizeTopLevel() {
 		switch self.curTk.Kind {
 		case token.PACKAGE, token.USE, token.PUB, token.LET, token.ATTR_S, token.IDENTIFIER:
 			return
-		case token.R_BRACE, token.END:
+		case token.R_BRACE:
 			self.next()
 			return
 		}
@@ -153,7 +153,7 @@ func (self *Parser) synchronizeBlock() {
 	self.next()
 	for self.curTk.Kind != token.EOF {
 		switch self.curTk.Kind {
-		case token.ATTR_S, token.PUB, token.LET, token.IDENTIFIER, token.R_PAREN, token.R_BRACE, token.END, token.COMMA:
+		case token.ATTR_S, token.PUB, token.LET, token.IDENTIFIER, token.R_PAREN, token.R_BRACE, token.ILLEGAL:
 			return
 		}
 		self.next()
@@ -162,8 +162,7 @@ func (self *Parser) synchronizeBlock() {
 
 func (self *Parser) synchronizeArgs() {
 	for self.curTk.Kind != token.EOF {
-		switch self.curTk.Kind {
-		case token.COMMA, token.R_PAREN, token.ATTR_E:
+		if self.match_group(token.G_LITERAL) || self.match(token.R_PAREN, token.ATTR_E, token.ILLEGAL) {
 			return
 		}
 		self.next()
@@ -172,8 +171,7 @@ func (self *Parser) synchronizeArgs() {
 
 func (self *Parser) synchronizeAttrs() {
 	for self.curTk.Kind != token.EOF {
-		switch self.curTk.Kind {
-		case token.COMMA, token.ATTR_E, token.END:
+		if self.matchAttrPathSegment() || self.match(token.ATTR_E, token.ILLEGAL) {
 			return
 		}
 		self.next()
@@ -182,8 +180,7 @@ func (self *Parser) synchronizeAttrs() {
 
 func (self *Parser) synchronizeUse() {
 	for self.curTk.Kind != token.EOF {
-		switch self.curTk.Kind {
-		case token.COMMA, token.R_PAREN:
+		if self.match(token.STRING, token.RAW_STRING, token.R_PAREN, token.ILLEGAL) {
 			return
 		}
 		self.next()
@@ -194,7 +191,7 @@ func (self *Parser) synchronizePubGroup() {
 	self.next()
 	for self.curTk.Kind != token.EOF {
 		switch self.curTk.Kind {
-		case token.PUB, token.LET, token.COMMA, token.END, token.R_PAREN:
+		case token.PUB, token.LET, token.ILLEGAL, token.R_PAREN:
 			return
 		}
 		self.next()

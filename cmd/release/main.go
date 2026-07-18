@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	conn, err := database.OpenDatabase(branding.NameDBfile)
+	conn, err := database.OpenDatabase(branding.DatabaseFileName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)

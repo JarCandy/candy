@@ -135,7 +135,7 @@ func OpenDatabase(name string) (*sql.DB, error) {
 		return nil, fmt.Errorf("get user config directory: %w", err)
 	}
 
-	appDir := filepath.Join(configDir, branding.NameProject)
+	appDir := filepath.Join(configDir, branding.ProjectName)
 
 	if err := os.MkdirAll(appDir, 0755); err != nil {
 		return nil, fmt.Errorf("create app directory: %w", err)
