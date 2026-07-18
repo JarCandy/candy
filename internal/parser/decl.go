@@ -83,11 +83,6 @@ func (self *Parser) parsePackage() *Package {
 		self.report(candyerrors.ParserPackagePath(span(errTk)))
 	}
 
-	if self.match(token.END) {
-		self.next()
-	} else if !self.match(token.EOF) {
-		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
-	}
 	return &Package{Tok: tk, Args: attr.Args}
 }
 
@@ -113,6 +108,11 @@ func (self *Parser) parseUse() *Use {
 	self.next()
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		if self.match(token.ILLEGAL) {
+			self.next()
+			continue
+		}
+
 		item, ok := self.parseUseImport()
 		if ok {
 			use.Imports = append(use.Imports, item)
@@ -123,17 +123,16 @@ func (self *Parser) parseUse() *Use {
 			self.synchronizeUse()
 		}
 
-		if self.match(token.COMMA) {
-			self.next()
+		if self.match(token.STRING, token.RAW_STRING) {
+			continue
+		}
+		if self.match(token.ILLEGAL) {
 			continue
 		}
 
 		if !self.match(token.R_PAREN, token.EOF) {
 			self.report(candyerrors.ParserUseSeparator(span(self.curTk)))
 			self.synchronizeUse()
-			if self.match(token.COMMA) {
-				self.next()
-			}
 		}
 	}
 
@@ -141,12 +140,6 @@ func (self *Parser) parseUse() *Use {
 		self.next()
 	} else {
 		self.report(candyerrors.ParserUseClosingParen(span(self.curTk)))
-	}
-
-	if self.match(token.END) {
-		self.next()
-	} else if !self.match(token.EOF) {
-		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
 
 	return use
@@ -161,7 +154,7 @@ func (self *Parser) parseUseImport() (UseImport, bool) {
 	item := UseImport{Link: self.curTk}
 	self.next()
 
-	if self.match(token.TRANSITION) {
+	if self.match(token.AS, token.TRANSITION) {
 		self.next()
 		if !self.match(token.IDENTIFIER) {
 			self.report(candyerrors.ParserUseAlias(span(self.curTk)))
@@ -191,7 +184,7 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 	self.next()
 
 	for !self.match(token.R_PAREN, token.EOF) {
-		if self.match(token.COMMA, token.END) {
+		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
 		}
@@ -208,21 +201,12 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 			decls = append(decls, &LetDecl{Let: let})
 		}
 
-		if self.match(token.COMMA, token.END) {
-			self.next()
-		}
 	}
 
 	if self.match(token.R_PAREN) {
 		self.next()
 	} else {
 		self.report(candyerrors.ParserPubGroupClosing(span(self.curTk)))
-	}
-
-	if self.match(token.END) {
-		self.next()
-	} else if !self.match(token.EOF) {
-		self.report(candyerrors.ParserOptionalSemicolon(span(self.curTk)))
 	}
 
 	return decls
@@ -280,7 +264,7 @@ func (self *Parser) parseDeclBody() []Stmt {
 
 	body := make([]Stmt, 0)
 	for !self.match(token.R_BRACE, token.EOF) {
-		if self.match(token.END, token.COMMA) {
+		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
 		}
@@ -304,8 +288,5 @@ func (self *Parser) parseDeclBody() []Stmt {
 		self.report(candyerrors.ParserDeclBodyClosing(span(self.curTk)))
 	}
 
-	if self.match(token.END) {
-		self.next()
-	}
 	return body
 }

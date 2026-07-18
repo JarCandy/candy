@@ -46,7 +46,7 @@ func (self *ProjectPlugin) Default(projectPatch string) {
 
 	self.Custom.PluginPath = valueOrDefault(self.Custom.PluginPath, "out/plugin.wasm")
 	self.Custom.DescriptionPath = valueOrDefault(self.Custom.DescriptionPath, "d.txt")
-	self.Custom.InterfacePath = valueOrDefault(self.Custom.InterfacePath, "interface"+branding.PrefixInterfaceFile)
+	self.Custom.InterfacePath = valueOrDefault(self.Custom.InterfacePath, "interface"+branding.InterfaceFileExtension)
 }
 
 func DownloadProjectPlagin(url string, localPath string) error {

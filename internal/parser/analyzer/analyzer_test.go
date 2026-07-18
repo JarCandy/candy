@@ -8,20 +8,20 @@ import (
 )
 
 func TestProjectChecksLetTypesBySimpleComparison(t *testing.T) {
-	source := []byte(`package("main");
+	source := []byte(`package("main")
 
-let title: string = "Candy";
-let age: string = 10;
-let active: bool = true;
-let badFlag: bool = "true";
-let sum: int = 1 + 2;
-let negative: int = -1;
-let namespaced: go::type::string = "x";
+let title: string = "Candy"
+let age: string = 10
+let active: bool = true
+let badFlag: bool = "true"
+let sum: int = 1 + 2
+let negative: int = -1
+let namespaced: go::type::string = "x"
 
 go::model User {
 	pub (
-		Name: string = "none",
-		Count: int = 1,
+		Name: string = "none"
+		Count: int = 1
 	)
 }
 `)
@@ -51,9 +51,9 @@ go::model User {
 }
 
 func TestProjectSkipsUnknownExprTypes(t *testing.T) {
-	source := []byte(`package("main");
+	source := []byte(`package("main")
 
-let id: string = go::lib("github.com/google/uuid")::NewString();
+let id: string = go::lib("github.com/google/uuid")::NewString()
 `)
 
 	result := analyzeSource(t, source)
@@ -68,6 +68,16 @@ let id: string = go::lib("github.com/google/uuid")::NewString();
 	if len(file.TypeErrors) != 0 {
 		t.Fatalf("expected no type errors, got %d", len(file.TypeErrors))
 	}
+}
+
+func TestTypeCheckerKeepsTypeModifiers(t *testing.T) {
+	source := []byte(`let name: *[]*string = "none"`)
+	result := analyzeSource(t, source)
+
+	if len(result.Files[0].TypeErrors) != 1 {
+		t.Fatalf("expected one type error, got %#v", result.Files[0].TypeErrors)
+	}
+	assertTypeError(t, result.Files[0].TypeErrors, "name", "*[]*string", "string")
 }
 
 func analyzeSource(t *testing.T, source []byte) *Result {

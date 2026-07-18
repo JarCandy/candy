@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"strings"
 
+	"github.com/CandyCrafts/candy/pkg/branding"
 	"github.com/rp1s/colorista"
 )
 
@@ -15,8 +16,15 @@ const candyArt = `
 ██║     ██╔══██║██║╚██╗██║██║  ██║  ╚██╔╝
 ╚██████╗██║  ██║██║ ╚████║██████╔╝   ██║
  ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝    ╚═╝
+`
 
- `
+func Art(color bool) string {
+	c := colorista.NewColorista(colorista.ThemeAuto)
+	if color {
+		return c.Gradient(candyArt, CandyGradientArt) + c.Apply("  Version: [", colorista.Bold) + branding.ReleaseVersion + c.Apply("]", colorista.Bold) + "\n\n"
+	}
+	return candyArt + c.Apply("  Version: [", colorista.Bold) + branding.ReleaseVersion + c.Apply("]", colorista.Bold) + "\n\n"
+}
 
 var CandyGradientArt = []colorista.GradientPos{
 	{Pos: 0.00, Color: colorista.RGB{R: 255, G: 70, B: 165}},  // bubblegum

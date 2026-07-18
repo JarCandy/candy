@@ -1,0 +1,58 @@
+name: Feature request
+description: Предложить новую возможность или изменение синтаксиса Candy.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Область
+      options:
+        - Parser and syntax
+        - Analyzer and types
+        - CLI
+        - Composer and plugins
+        - Database and cache
+        - VS Code extension
+        - Build and releases
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Проблема
+      description: Какую задачу невозможно или неудобно решить сейчас?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предлагаемое решение
+      description: Опишите поведение и, если нужно, покажите пример синтаксиса.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы
+      description: Какие другие варианты вы рассматривали?
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Совместимость
+      description: Ломает ли предложение существующий синтаксис, AST или API?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Проверки
+      options:
+        - label: Я проверил открытые Issues и не нашёл аналогичное предложение.
+          required: true

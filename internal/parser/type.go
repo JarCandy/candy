@@ -6,8 +6,22 @@ import (
 )
 
 type TypeExpr struct {
-	Tok  token.Token
-	Path []token.Token // last item = Type.Tok
+	Tok       token.Token
+	Modifiers []TypeModifier
+	Path      []token.Token // last item = Type.Tok
+}
+
+type TypeModifierKind uint8
+
+const (
+	TypePointer TypeModifierKind = iota + 1
+	TypeSlice
+)
+
+type TypeModifier struct {
+	Kind  TypeModifierKind
+	Tok_s token.Token
+	Tok_e token.Token
 }
 
 func (TypeExpr) node()                   {}
@@ -15,14 +29,43 @@ func (TypeExpr) typ()                    {}
 func (self TypeExpr) Token() token.Token { return self.Tok }
 
 func (self *Parser) parseType() *TypeExpr {
+	modifiers := make([]TypeModifier, 0)
+	for {
+		switch {
+		case self.match(token.MUL):
+			modifiers = append(modifiers, TypeModifier{
+				Kind:  TypePointer,
+				Tok_s: self.curTk,
+				Tok_e: self.curTk,
+			})
+			self.next()
+
+		case self.match(token.L_BRACK):
+			modifier := TypeModifier{Kind: TypeSlice, Tok_s: self.curTk}
+			self.next()
+			if !self.match(token.R_BRACK) {
+				self.report(candyerrors.ParserTypeSliceClosing(span(self.curTk)))
+				return nil
+			}
+			modifier.Tok_e = self.curTk
+			modifiers = append(modifiers, modifier)
+			self.next()
+
+		default:
+			goto path
+		}
+	}
+
+path:
 	if !self.match(token.IDENTIFIER) {
 		self.report(candyerrors.ParserTypeStart(span(self.curTk)))
 		return nil
 	}
 
 	te := &TypeExpr{
-		Tok:  self.curTk,
-		Path: make([]token.Token, 0),
+		Tok:       self.curTk,
+		Modifiers: modifiers,
+		Path:      make([]token.Token, 0),
 	}
 
 	for {

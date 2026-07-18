@@ -10,26 +10,26 @@ import (
 
 func TestLexer(t *testing.T) {
 	lex := New([]byte(`
-package::("main");
+package("main")
 
-use::(
-    "github.com/CandyCrafts/plugins/db", // import NEW db
+use (
+    "github.com/CandyCrafts/plugins/db" // import NEW db
 )
 
 // global attr
-#[lang=custom::("github.com/CandyCrafts/LangEngines/Go@latest")]; // import NEW engine
+#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")] // import NEW engine
 
-#[db::sqlite::table::("User")];
+#[db::sqlite::table("User")]
 go::model User {
-    #[db::sqlite::index]; // behavior tag 
-    pub Id: strings = go::lib::("github.com/google/uuid")::NewString()
-    pub Name: string = "none",
+    #[db::sqlite::index] // behavior tag
+    pub Id: strings = go::lib("github.com/google/uuid")::NewString()
+    pub Name: string = "none"
 }
 
-#[comoser::file::no_edit::(true)];
+#[composer::file::no_edit(true)]
 go::impl User {
-    #[db::go::func::delete_rec];
-    pub banned() -> go::type::error,
+    #[db::go::func::delete_rec]
+    pub banned() -> go::type::error
 }
 	`), "model.cp")
 
@@ -39,6 +39,36 @@ go::impl User {
 		if tk.Kind == token.EOF {
 			break
 		}
+	}
+}
+
+func TestLexerRejectsSemicolon(t *testing.T) {
+	lex := New([]byte(";"), "test.cm")
+	tk := lex.NextToken()
+
+	if tk.Kind != token.ILLEGAL {
+		t.Fatalf("expected ILLEGAL token, got %s", tk.Kind)
+	}
+	if len(lex.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(lex.Diagnostics.Errors))
+	}
+	if lex.Diagnostics.Errors[0].Arrow != "Semicolons are not supported" {
+		t.Fatalf("expected semicolon diagnostic, got %q", lex.Diagnostics.Errors[0].Arrow)
+	}
+}
+
+func TestLexerRejectsComma(t *testing.T) {
+	lex := New([]byte(","), "test.cm")
+	tk := lex.NextToken()
+
+	if tk.Kind != token.ILLEGAL {
+		t.Fatalf("expected ILLEGAL token, got %s", tk.Kind)
+	}
+	if len(lex.Diagnostics.Errors) != 1 {
+		t.Fatalf("expected one diagnostic, got %d", len(lex.Diagnostics.Errors))
+	}
+	if lex.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
+		t.Fatalf("expected comma diagnostic, got %q", lex.Diagnostics.Errors[0].Arrow)
 	}
 }
 

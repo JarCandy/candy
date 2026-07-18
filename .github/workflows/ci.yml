@@ -99,3 +99,36 @@ jobs:
 
       - name: Run tests
         run: make test
+
+  editor:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        !contains(github.event.head_commit.message, '[skip ci]') &&
+        !contains(github.event.head_commit.message, '[ci skip]') &&
+        !contains(github.event.pull_request.title, '[skip ci]') &&
+        !contains(github.event.pull_request.title, '[ci skip]') &&
+        !contains(github.event.pull_request.body, '[skip ci]') &&
+        !contains(github.event.pull_request.body, '[ci skip]')
+      }}
+    defaults:
+      run:
+        working-directory: editors/vscode
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: editors/vscode/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check extension
+        run: npm run check

@@ -1,21 +1,26 @@
 # Candy
 
+[![CI](https://github.com/CandyCrafts/candy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CandyCrafts/candy/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/CandyCrafts/candy/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/CandyCrafts/candy/actions/workflows/codeql.yml)
+[![Go 1.25.6](https://img.shields.io/badge/Go-1.25.6-00ADD8?logo=go&logoColor=white)](go.mod)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](LICENSE)
+
 Candy - экспериментальный декларативный язык и набор инструментов для описания
 моделей данных, интеграций, поведения генераторов и кода, зависящего от целевого
 языка.
 
 ```candy
-package("main");
+package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" -> d,
+    "github.com/CandyCrafts/plugins/db" as db
 )
 
-#[d::sqlite::table("User")];
+#[db::sqlite::table("User")]
 go::model User {
     pub (
-        Id: string = go::lib("github.com/google/uuid")::NewString(),
-        Name: string = "none",
+        Id: string = go::lib("github.com/google/uuid").NewString()
+        Name: string = "none"
     )
 }
 ```
@@ -33,19 +38,18 @@ Candy находится в активной разработке. Сейчас 
 - [Полный пример](#полный-пример)
 - [Пакеты](#пакеты)
 - [Импорты](#импорты)
+- [Конфигурация](#конфигурация)
 - [Атрибуты](#атрибуты)
 - [Квалифицированные объявления](#квалифицированные-объявления)
 - [Переменные и поля](#переменные-и-поля)
 - [Группы публичных объявлений](#группы-публичных-объявлений)
 - [Методы](#методы)
 - [Типы](#типы)
-- [Выражения](#выражения)
 - [Комментарии и разделители](#комментарии-и-разделители)
 - [Диагностика и языки](#диагностика-и-языки)
-- [Просмотр дерева через Lipa](#просмотр-дерева-через-lipa)
 - [Разработка](#разработка)
 - [Участие в проекте](#участие-в-проекте)
-- [Структура проекта](#структура-проекта)
+- [Лицензия и безопасность](#лицензия-и-безопасность)
 - [Текущие ограничения](#текущие-ограничения)
 
 ## Состояние проекта
@@ -105,6 +109,17 @@ make build
 ```
 
 Исполняемый файл будет создан по пути `bin/candy`.
+
+Релизная сборка увеличивает текстовую `branding.ReleaseVersion` перед
+компиляцией:
+
+```sh
+make build -r
+```
+
+Версия имеет формат `YY.M.D.N`, например `26.7.18.1`. Последнее число
+увеличивается с каждой релизной сборкой в течение дня, а в новый день начинается
+с единицы.
 
 ### Установка в PATH
 
@@ -198,10 +213,15 @@ candy --lang ru help
 
 ## Синтаксис языка
 
+Актуальный пример синтаксиса находится в
+[`examples/models/1-model.cm`](examples/models/1-model.cm) и проверяется тестами
+парсера.
+
 Исходный файл может содержать:
 
 - объявление `package(...)`;
 - импорты `use (...)`;
+- глобальные настройки через `let`;
 - глобальные атрибуты;
 - объявления `let` и `pub let`;
 - группы публичных объявлений;
@@ -216,37 +236,37 @@ candy --lang ru help
 ## Полный пример
 
 ```candy
-package("main");
+package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" -> d,
-    "github.com/CandyCrafts/plugins/std",
+    "github.com/CandyCrafts/plugins/db" as db
+    "github.com/CandyCrafts/plugins/std" as std
 )
 
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];
+let lang = custom("github.com/CandyCrafts/LangEngines/Go@latest")
 
-#[d::sqlite::table("User")];
+#[db::sqlite::table("User")]
 go::model User {
-    #[db::sqlite::index];
-
+    pub id: string = go::lib("github.com/google/uuid").NewString()
     pub (
-        Id: string = go::lib("github.com/google/uuid")::NewString(),
-        Name: string = "none",
-        Enabled: bool = true,
+        name: *[]*string = "none"
+        enabled: *bool = true
     )
 }
 
-#[composer::file::no_edit(true)];
+#[composer::file::no_edit(true)]
 go::impl User {
-    #[d::go::func::delete_rec];
-    pub banned() -> go::type::error,
+    #[db::go::func::delete_rec]
+    pub banned()
+
+    pub validate() -> (User error)
 }
 ```
 
 ## Пакеты
 
 ```candy
-package("main");
+package("main")
 ```
 
 В объявлении `package` допускается только один сегмент пути и список аргументов.
@@ -258,18 +278,27 @@ package("main");
 
 ```candy
 use (
-    "github.com/CandyCrafts/plugins/db",
-    "github.com/CandyCrafts/plugins/http" -> http,
+    "github.com/CandyCrafts/plugins/db"
+    "github.com/CandyCrafts/plugins/http" as http
 )
 ```
 
-Оператор `->` назначает импорту псевдоним. После последнего импорта можно
-оставить запятую.
+Ключевое слово `as` назначает импорту псевдоним. Старый оператор `->` пока
+поддерживается для совместимости. Импорты записываются подряд без разделителей.
 
 ```candy
 use (
-    "github.com/CandyCrafts/plugins/database" -> db,
+    "github.com/CandyCrafts/plugins/database" as db
 )
+```
+
+## Конфигурация
+
+Для настроек используется обычное объявление `let` на верхнем уровне. В AST оно
+представлено тем же `LetDecl`, что и остальные переменные:
+
+```candy
+let lang = custom("github.com/CandyCrafts/LangEngines/Go@latest")
 ```
 
 ## Атрибуты
@@ -278,39 +307,38 @@ use (
 внутри тела объявления:
 
 ```candy
-#[db::sqlite::table("User")];
-#[db::sqlite::index];
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];
+#[db::sqlite::table("User")]
+#[db::sqlite::index]
 ```
 
 В одном блоке можно указать несколько атрибутов:
 
 ```candy
-#[db::sqlite::index, cache::enabled(true)];
+#[db::sqlite::index cache::enabled(true)]
 ```
 
 Позиционные аргументы:
 
 ```candy
-#[database::column("name")];
+#[database::column("name")]
 ```
 
 Именованные аргументы:
 
 ```candy
-#[database::column("name", nullable: false)];
+#[database::column("name" nullable: false)]
 ```
 
 Вложенные квалифицированные вызовы:
 
 ```candy
-#[db::sqlite(db::std::name())];
+#[db::sqlite(db::std::name())]
 ```
 
 Атрибуты с присваиванием подходят для настроек:
 
 ```candy
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")];
+#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")]
 ```
 
 ## Квалифицированные объявления
@@ -341,10 +369,10 @@ model User {
 Глобальные переменные объявляются через `let` или `pub let`:
 
 ```candy
-let port: int = 8080;
-pub let name: string = "Candy";
-let enabled = true;
-let title: string;
+let port: int = 8080
+pub let name: string = "Candy"
+let enabled = true
+let title: string
 ```
 
 У переменной должен быть тип, начальное значение или оба элемента.
@@ -353,9 +381,9 @@ let title: string;
 
 ```candy
 go::model User {
-    pub Id: string = "none",
-    let Internal: bool = false,
-    Name: string = "unknown",
+    pub Id: string = "none"
+    let Internal: bool = false
+    Name: string = "unknown"
 }
 ```
 
@@ -363,7 +391,7 @@ go::model User {
 
 ```candy
 go::model User {
-    pub let Id: string = "none",
+    pub let Id: string = "none"
 }
 ```
 
@@ -373,8 +401,8 @@ go::model User {
 
 ```candy
 pub (
-    let host: string = "localhost",
-    let port: int = 8080,
+    let host: string = "localhost"
+    let port: int = 8080
 )
 ```
 
@@ -383,8 +411,8 @@ pub (
 ```candy
 go::model User {
     pub (
-        Id: string = "none",
-        Name: string = "unknown",
+        Id: string = "none"
+        Name: string = "unknown"
     )
 }
 ```
@@ -392,10 +420,10 @@ go::model User {
 Одиночные формы продолжают поддерживаться:
 
 ```candy
-pub let globalName: string = "Candy";
+pub let globalName: string = "Candy"
 
 go::model User {
-    pub Id: string = "none",
+    pub Id: string = "none"
 }
 ```
 
@@ -405,32 +433,27 @@ go::model User {
 
 ```candy
 go::impl User {
-	pub save(),
-	pub banned() -> go::type::error,
-	pub validate() -> (go::type::error, go::type::error),
+	pub save()
+	pub banned() -> go::type::error
+	pub validate() -> (go::type::error go::type::error)
 }
 ```
 
 Возвращаемый тип необязателен. Один тип указывается сразу после `->`, а несколько
-типов записываются через запятую в круглых скобках. Типизированные параметры
+типов записываются подряд в круглых скобках. Типизированные параметры
 функций пока не реализованы: аргументы метода используют тот же синтаксис
 вызовов, что и аргументы атрибутов.
 
 ## Типы
 
-Типы записываются как пути из идентификаторов без круглых скобок:
-
 ```candy
 string
-go::type::error
-project::domain::UserID
-```
-
-Учитывается весь путь. Текущий анализатор считает следующие типы разными:
-
-```text
-string
-go::type::string
+int
+uint
+complex
+[]array
+[]*array // array of pointers
+*[]*array // pointer to an array of pointers
 ```
 
 ## Комментарии и разделители
@@ -441,16 +464,16 @@ go::type::string
 /* блочный комментарий */
 ```
 
-В конце объявлений верхнего уровня рекомендуется ставить точку с запятой:
+Точки с запятой не входят в синтаксис Candy и считаются ошибкой:
 
 ```candy
-package("main");
-#[db::sqlite::table("User")];
+package("main")
+#[db::sqlite::table("User")]
 ```
 
-Если граница конструкции однозначна, отсутствие точки с запятой создаёт
-предупреждение, а не критическую ошибку. Запятые разделяют импорты, аргументы,
-поля и сгруппированные объявления.
+Поля, методы, аргументы, атрибуты, импорты, элементы `pub (...)` и возвращаемые
+типы записываются подряд без разделителей. Точки с запятой и запятые не входят в
+синтаксис Candy и всегда считаются ошибкой.
 
 ## Диагностика и языки
 
@@ -463,8 +486,8 @@ package("main");
 русский. Текст CLI без готового перевода может переводиться автоматически:
 
 ```sh
-candy -L ru help
-candy -L uk help
+candy --lang ru help
+candy --lang uk help
 ```
 
 Автоматические переводы кэшируются в памяти и SQLite. Постоянный кэш хранится в
@@ -489,7 +512,7 @@ make test
 
 ```sh
 go test ./internal/parser
-go test ./internal/analyzer
+go test ./internal/parser/analyzer
 ```
 
 У независимых модулей собственные наборы тестов:
@@ -509,6 +532,18 @@ EDIT.` необходимо перегенерировать, а не измен
 [CONTRIBUTING.md](CONTRIBUTING.md). Для генерации базы данных проект использует
 RPL `0.7.2`.
 
+Для ошибок и предложений используйте
+[GitHub Issues](https://github.com/CandyCrafts/candy/issues), а вопросы по
+использованию и разработке задавайте в
+[Discussions](https://github.com/CandyCrafts/candy/discussions).
+
+## Лицензия и безопасность
+
+Candy распространяется по лицензии [GNU GPL v3.0](LICENSE).
+
+Уязвимости необходимо отправлять приватно по инструкции из
+[SECURITY.md](SECURITY.md). Не публикуйте сведения об уязвимости в обычном Issue.
+Общие вопросы поддержки описаны в [SUPPORT.md](SUPPORT.md).
 
 ## Текущие ограничения
 

@@ -5,8 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/CandyCrafts/candy/internal/analyzer"
 	"github.com/CandyCrafts/candy/internal/composer"
+	"github.com/CandyCrafts/candy/internal/parser/analyzer"
+	"github.com/CandyCrafts/candy/pkg/branding"
 	"github.com/CandyCrafts/candy/pkg/clifmt"
 	"github.com/rp1s/digreyt/translate"
 )
@@ -102,7 +103,7 @@ func Install(args []string) error {
 
 func helpDocument() clifmt.Document {
 	return clifmt.Document{
-		Art:     candyArt,
+		Art:     Art(branding.ColorArt),
 		ShowArt: true,
 		Usage:   clifmt.T("candy [options] <command> [arguments]"),
 		Sections: []clifmt.Section{

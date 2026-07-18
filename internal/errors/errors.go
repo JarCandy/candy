@@ -114,6 +114,22 @@ func LexerUnexpectedSharp(span Span) Error {
 	)
 }
 
+func LexerUnexpectedSemicolon(span Span) Error {
+	return lexerIllegal(
+		span,
+		text("Semicolons are not supported", "Точки с запятой не поддерживаются"),
+		text("remove ';'; Candy declarations do not use terminators", "уберите ';': объявления Candy не используют завершающие разделители"),
+	)
+}
+
+func LexerUnexpectedComma(span Span) Error {
+	return lexerIllegal(
+		span,
+		text("Commas are not supported", "Запятые не поддерживаются"),
+		text("remove ','; Candy lists do not use separators", "уберите ',': списки Candy не используют разделители"),
+	)
+}
+
 func LexerNestedAttribute(span Span) Error {
 	return lexerIllegal(
 		span,
@@ -199,8 +215,8 @@ func ParserArg(span Span) Error {
 func ParserArgSeparator(span Span) Error {
 	return parsingError(
 		span,
-		text("Expected comma or closing parenthesis", "Ожидалась запятая или закрывающая скобка"),
-		text("after an argument, expected a comma for the next argument or a closing parenthesis", "после аргумента ожидалась запятая для следующего аргумента или закрывающая скобка"),
+		text("Expected argument or closing parenthesis", "Ожидался аргумент или закрывающая скобка"),
+		text("arguments follow each other without separators", "аргументы записываются друг за другом без разделителей"),
 	)
 }
 
@@ -257,8 +273,8 @@ func ParserAttrsStart(span Span) Error {
 func ParserAttrsSeparator(span Span) Error {
 	return parsingError(
 		span,
-		text("Expected comma or closing attribute bracket", "Ожидалась запятая или закрывающая скобка атрибута"),
-		text("after an attribute entry, expected ',' or ']'", "после элемента атрибута ожидалась ',' или ']'"),
+		text("Expected attribute or closing bracket", "Ожидался атрибут или закрывающая скобка"),
+		text("attributes follow each other without separators", "атрибуты записываются друг за другом без разделителей"),
 	)
 }
 
@@ -284,6 +300,14 @@ func ParserTypePathSegment(span Span) Error {
 		text("Expected type path segment", "Ожидался сегмент пути типа"),
 		text("expected an identifier after '::' in the type path", "после '::' в пути типа ожидался идентификатор"),
 		text("a type path must look like Type or module::Type", "путь типа должен выглядеть как Type или module::Type"),
+	)
+}
+
+func ParserTypeSliceClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing bracket for slice type", "Ожидалась закрывающая скобка типа среза"),
+		text("a slice type prefix must be written as '[]'", "префикс типа среза должен записываться как '[]'"),
 	)
 }
 
@@ -335,15 +359,6 @@ func ParserArgsClosingParen(span Span) Error {
 	)
 }
 
-func ParserOptionalSemicolon(span Span) Error {
-	return withSeverity(diagnostic(
-		Errors[parsingErrorIndex],
-		span,
-		text("Optional semicolon is missing", "Необязательная точка с запятой отсутствует"),
-		text("put ';' after the declaration to make the boundary explicit", "поставьте ';' после объявления, чтобы явно отделить его от следующей конструкции"),
-	), SeverityWarning)
-}
-
 func ParserUseStart(span Span) Error {
 	return parsingError(
 		span,
@@ -364,15 +379,15 @@ func ParserUseAlias(span Span) Error {
 	return parsingError(
 		span,
 		text("Expected import alias", "Ожидался алиас импорта"),
-		text("after '->', expected an identifier alias", "после '->' ожидался идентификатор алиаса"),
+		text("after 'as' or '->', expected an identifier alias", "после 'as' или '->' ожидался идентификатор алиаса"),
 	)
 }
 
 func ParserUseSeparator(span Span) Error {
 	return parsingError(
 		span,
-		text("Expected comma or closing parenthesis", "Ожидалась запятая или закрывающая скобка"),
-		text("after a use import entry, expected ',' or ')'", "после элемента use ожидалась ',' или ')'"),
+		text("Expected import or closing parenthesis", "Ожидался импорт или закрывающая скобка"),
+		text("imports follow each other without separators", "импорты записываются друг за другом без разделителей"),
 	)
 }
 
@@ -443,8 +458,8 @@ func ParserMethodReturn(span Span) Error {
 func ParserMethodReturnSeparator(span Span) Error {
 	return parsingError(
 		span,
-		text("Expected comma or closing parenthesis", "Ожидалась запятая или закрывающая скобка"),
-		text("method return types must be separated by commas", "возвращаемые типы метода должны разделяться запятыми"),
+		text("Expected return type or closing parenthesis", "Ожидался возвращаемый тип или закрывающая скобка"),
+		text("method return types follow each other without separators", "возвращаемые типы метода записываются друг за другом без разделителей"),
 	)
 }
 

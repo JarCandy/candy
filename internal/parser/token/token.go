@@ -31,6 +31,7 @@ const (
 
 	PACKAGE // package
 	USE     // use
+	AS      // as
 
 	PUB // pub
 	LET // let
@@ -63,8 +64,6 @@ const (
 
 	COLON   // :
 	D_COLON // ::
-	END     // ;
-	COMMA   // ,
 	DOT     // .
 
 )
@@ -202,6 +201,7 @@ func (self Token) Literal(source *[]byte) []byte {
 var keywords = map[string]Kind{
 	"package": PACKAGE,
 	"use":     USE,
+	"as":      AS,
 	"pub":     PUB,
 	"let":     LET,
 	"true":    TRUE,
@@ -249,6 +249,8 @@ func (self Kind) String() string {
 		return "PACKAGE"
 	case USE:
 		return "USE"
+	case AS:
+		return "AS"
 	case PUB:
 		return "PUB"
 	case LET:
@@ -297,10 +299,6 @@ func (self Kind) String() string {
 		return "COLON"
 	case D_COLON:
 		return "D_COLON"
-	case END:
-		return "END"
-	case COMMA:
-		return "COMMA"
 	case DOT:
 		return "DOT"
 	default:
