@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/caramelang/caramel/internal/cli"
 	"github.com/caramelang/caramel/internal/parser"
 	"github.com/rp1s/lipa"
 )
@@ -17,7 +18,9 @@ type ParserView struct {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if printErr := cli.PrintError(os.Stderr, err); printErr != nil {
+			fmt.Fprintln(os.Stderr, printErr)
+		}
 		os.Exit(1)
 	}
 }
@@ -35,10 +38,10 @@ func run() error {
 
 	p := parser.New(source, fileName)
 	ast, parseErr := p.Run()
-	diagnostics := append([]any(nil), diagnosticsSnapshot(p.Diagnostics.Errors)...)
 	if parseErr != nil {
-		p.Diagnostics.Print(os.Stderr)
+		return parseErr
 	}
+	diagnostics := append([]any(nil), diagnosticsSnapshot(p.Diagnostics.Errors)...)
 
 	options := []lipa.Option{lipa.WithTitle("Caramel Parser Tree")}
 	if outputPath := os.Getenv("LIPA_OUT"); outputPath != "" {

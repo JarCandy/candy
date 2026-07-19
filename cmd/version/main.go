@@ -7,6 +7,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -18,18 +19,27 @@ import (
 const defaultVersionFile = "pkg/branding/version.gen.go"
 
 func main() {
+	if err := run(os.Stdout, os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func run(writer io.Writer, args []string) error {
 	path := defaultVersionFile
-	if len(os.Args) > 1 {
-		path = os.Args[1]
+	if len(args) > 0 {
+		path = args[0]
 	}
 
 	version, err := incrementReleaseVersion(path)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
 
-	fmt.Printf("release version: %s\n", version)
+	if _, err := fmt.Fprintf(writer, "release version: %s\n", version); err != nil {
+		return fmt.Errorf("print release version: %w", err)
+	}
+	return nil
 }
 
 func incrementReleaseVersion(path string) (string, error) {

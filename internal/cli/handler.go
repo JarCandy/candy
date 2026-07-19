@@ -33,7 +33,7 @@ func HandlerCmd() error {
 
 	cmd, ok := commands[args[0]]
 	if !ok {
-		return Help(nil)
+		return fmt.Errorf("unknown command %q", args[0])
 	}
 
 	return cmd(args[1:])
@@ -71,8 +71,7 @@ func parseGlobalArgs(args []string) ([]string, bool, error) {
 }
 
 func Help(args []string) error {
-	clifmt.Print(helpDocument(), CurrentLanguage)
-	return nil
+	return clifmt.Print(helpDocument(), CurrentLanguage)
 }
 
 func Build(args []string) error {
@@ -142,7 +141,7 @@ func helpDocument() clifmt.Document {
 			{
 				Title: clifmt.T("Examples"),
 				Rows: []clifmt.Row{
-					{Label: "caramel build examples/models/model.cm", Description: clifmt.T("Build using the file name as project name.")},
+					{Label: "caramel build examples/models/1-model.cm", Description: clifmt.T("Build using the file name as project name.")},
 					{Label: "caramel build src/user.cm user", Description: clifmt.T("Build with an explicit project name.")},
 					{Label: "caramel --lang ru help", Description: clifmt.T("Show help in Russian.")},
 				},

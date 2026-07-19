@@ -80,6 +80,23 @@ func TestTypeCheckerKeepsTypeModifiers(t *testing.T) {
 	assertTypeError(t, result.Files[0].TypeErrors, "name", "*[]*string", "string")
 }
 
+func TestTypeCheckerUnderstandsPointerCompositeTypes(t *testing.T) {
+	source := []byte(`let names: *[]*string = &[]&string{"hello", "world"}
+let enabled: *bool = &true
+let users: *[]User = &[]User{User{name: "first"}}
+let byName: *map[string]*User = &map[string]*User{"first": &User{name: "first"}}
+let nested: *map[string]map[string]string = &map[string]map[string]string{"outer": map[string]string{"inner": "value"}}
+`)
+	result := analyzeSource(t, source)
+
+	if result.Diagnostics.HasFatalErrors() {
+		t.Fatalf("unexpected diagnostics: %v", result.Diagnostics)
+	}
+	if result.Files[0].TypeChecks != 5 {
+		t.Fatalf("expected five type checks, got %d", result.Files[0].TypeChecks)
+	}
+}
+
 func analyzeSource(t *testing.T, source []byte) *Result {
 	t.Helper()
 

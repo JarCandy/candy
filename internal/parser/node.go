@@ -144,6 +144,9 @@ func (self *Parser) parseAttrs() *Attrs {
 	self.next()
 
 	for !self.match(token.ATTR_E, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -160,6 +163,9 @@ func (self *Parser) parseAttrs() *Attrs {
 		attrs.Attrs = append(attrs.Attrs, attr)
 		self.addAttrToMap(attrs, attr)
 
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue

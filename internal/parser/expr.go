@@ -61,6 +61,30 @@ func (BinaryExpr) node()                   {}
 func (BinaryExpr) expr()                   {}
 func (self BinaryExpr) Token() token.Token { return self.Tok }
 
+// CompositeExpr represents typed collection and model values such as
+// []string{"one", "two"} and User{name: "Caramel"}.
+type CompositeExpr struct {
+	Tok      token.Token
+	Type     *TypeExpr
+	Tok_s    token.Token
+	Tok_e    token.Token
+	Elements []*CompositeElement
+}
+
+func (CompositeExpr) node()                   {}
+func (CompositeExpr) expr()                   {}
+func (self CompositeExpr) Token() token.Token { return self.Tok }
+
+type CompositeElement struct {
+	Tok   token.Token
+	Name  *token.Token
+	Key   *Expr
+	Value *Expr
+}
+
+func (CompositeElement) node()                   {}
+func (self CompositeElement) Token() token.Token { return self.Tok }
+
 func precedence(kind token.Kind) int {
 	switch kind {
 	case token.ADD, token.SUB:
@@ -108,7 +132,7 @@ func (self *Parser) parseExpr(pre int) *Expr {
 
 func (self *Parser) parsePrefix() *Expr {
 	switch self.curTk.Kind {
-	case token.SUB:
+	case token.SUB, token.RA:
 		op := self.curTk
 		self.next()
 		x := self.parseExpr(Prefix)
@@ -129,14 +153,33 @@ func (self *Parser) parsePrefix() *Expr {
 		return self.parseLiteral()
 
 	case token.IDENTIFIER:
+		if self.match_peek(token.L_BRACK) {
+			tk := self.curTk
+			typ := self.parseType()
+			if typ == nil {
+				return ptr[Expr](InvalidExpr{Tok: tk})
+			}
+			return self.parseCompositeBody(typ, tk)
+		}
+		if self.match_peek(token.L_BRACE) {
+			tk := self.curTk
+			self.next()
+			return self.parseCompositeBody(&TypeExpr{Tok: tk, Path: []token.Token{tk}}, tk)
+		}
 		if self.match_peek(token.D_COLON, token.DOT, token.L_PAREN) {
 			attr := self.parseAttr()
 			if attr == nil {
 				return ptr[Expr](InvalidExpr{Tok: self.curTk})
 			}
+			if self.match(token.L_BRACE) && attrCanBeCompositeType(attr) {
+				return self.parseCompositeBody(&TypeExpr{Tok: attr.Path[len(attr.Path)-1], Path: attr.Path}, attr.Tok)
+			}
 			return ptr[Expr](attr)
 		}
 		return self.parseIdent()
+
+	case token.L_BRACK:
+		return self.parseSliceComposite()
 
 	case token.L_PAREN:
 		self.next()
@@ -156,6 +199,146 @@ func (self *Parser) parsePrefix() *Expr {
 		self.next()
 		return ptr[Expr](InvalidExpr{Tok: tk})
 	}
+}
+
+func (self *Parser) parseSliceComposite() *Expr {
+	tk := self.curTk
+	typ := &TypeExpr{Tok: tk, Modifiers: make([]TypeModifier, 0), Path: make([]token.Token, 0)}
+
+	for {
+		switch {
+		case self.match(token.L_BRACK):
+			modifier := TypeModifier{Kind: TypeSlice, Tok_s: self.curTk}
+			self.next()
+			if !self.match(token.R_BRACK) {
+				self.report(caramelerrors.ParserTypeSliceClosing(span(self.curTk)))
+				return ptr[Expr](InvalidExpr{Tok: tk})
+			}
+			modifier.Tok_e = self.curTk
+			typ.Modifiers = append(typ.Modifiers, modifier)
+			self.next()
+
+		case self.match(token.RA):
+			typ.Modifiers = append(typ.Modifiers, TypeModifier{
+				Kind:  TypePointer,
+				Tok_s: self.curTk,
+				Tok_e: self.curTk,
+			})
+			self.next()
+
+		default:
+			goto path
+		}
+	}
+
+path:
+	if !self.match(token.IDENTIFIER) {
+		self.report(caramelerrors.ParserCompositeType(span(self.curTk)))
+		return ptr[Expr](InvalidExpr{Tok: tk})
+	}
+
+	for {
+		typ.Path = append(typ.Path, self.curTk)
+		typ.Tok = self.curTk
+		self.next()
+		if !self.match(token.D_COLON) {
+			break
+		}
+		self.next()
+		if !self.match(token.IDENTIFIER) {
+			self.report(caramelerrors.ParserCompositeType(span(self.curTk)))
+			return ptr[Expr](InvalidExpr{Tok: tk})
+		}
+	}
+
+	return self.parseCompositeBody(typ, tk)
+}
+
+func (self *Parser) parseCompositeBody(typ *TypeExpr, tk token.Token) *Expr {
+	if !self.match(token.L_BRACE) {
+		self.report(caramelerrors.ParserCompositeBody(span(self.curTk)))
+		return ptr[Expr](InvalidExpr{Tok: tk})
+	}
+
+	composite := CompositeExpr{
+		Tok:      tk,
+		Type:     typ,
+		Tok_s:    self.curTk,
+		Elements: make([]*CompositeElement, 0),
+	}
+	self.next()
+
+	for !self.match(token.R_BRACE, token.EOF) {
+		if self.match(token.COMMA) {
+			self.next()
+			continue
+		}
+		if self.match(token.ILLEGAL) {
+			self.next()
+			continue
+		}
+
+		element := &CompositeElement{Tok: self.curTk}
+		first := self.ParseExpr()
+		if self.match(token.COLON) {
+			if ident, ok := exprIdent(first); ok {
+				name := ident.Name
+				element.Name = &name
+			} else {
+				element.Key = first
+			}
+			self.next()
+			if self.match(token.R_BRACE, token.COMMA, token.EOF) {
+				self.report(caramelerrors.ParserCompositeValue(span(self.curTk)))
+				if self.match(token.COMMA) {
+					self.next()
+				}
+				continue
+			}
+			element.Value = self.ParseExpr()
+		} else {
+			element.Value = first
+		}
+		composite.Elements = append(composite.Elements, element)
+		if self.match(token.COMMA) {
+			self.next()
+		}
+	}
+
+	if self.match(token.R_BRACE) {
+		composite.Tok_e = self.curTk
+		self.next()
+	} else {
+		self.report(caramelerrors.ParserCompositeClosing(span(self.curTk)))
+	}
+
+	return ptr[Expr](composite)
+}
+
+func exprIdent(expr *Expr) (IdentExpr, bool) {
+	if expr == nil || *expr == nil {
+		return IdentExpr{}, false
+	}
+	switch ident := (*expr).(type) {
+	case IdentExpr:
+		return ident, true
+	case *IdentExpr:
+		return *ident, true
+	default:
+		return IdentExpr{}, false
+	}
+}
+
+func attrCanBeCompositeType(attr *Attr) bool {
+	if attr == nil || len(attr.Path) == 0 || len(attr.Args) != 0 || attr.Value != nil {
+		return false
+	}
+	for _, separator := range attr.Separators {
+		if separator.Kind != token.D_COLON {
+			return false
+		}
+	}
+	return true
 }
 
 func (self *Parser) parseLiteral() *Expr {
@@ -301,6 +484,9 @@ func (self *Parser) parseArgs() []*Arg {
 	args := make([]*Arg, 0)
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -325,6 +511,9 @@ func (self *Parser) parseArgs() []*Arg {
 			continue
 		}
 		if self.match_group(token.G_LITERAL) {
+			continue
+		}
+		if self.consumeUnsupportedComma() {
 			continue
 		}
 

@@ -258,9 +258,7 @@ func (self *Lexer) NextToken() Token {
 		self.report(caramelerrors.LexerUnexpectedSemicolon(span(tk)))
 		return tk
 	case ',':
-		tk := self.tok(ILLEGAL)
-		self.report(caramelerrors.LexerUnexpectedComma(span(tk)))
-		return tk
+		return self.tok(COMMA)
 
 	case '"':
 		return self.readString()

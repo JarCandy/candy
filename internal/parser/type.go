@@ -9,6 +9,8 @@ type TypeExpr struct {
 	Tok       token.Token
 	Modifiers []TypeModifier
 	Path      []token.Token // last item = Type.Tok
+	Key       Type          // map[K]V key
+	Element   Type          // map[K]V value
 }
 
 type TypeModifierKind uint8
@@ -73,8 +75,7 @@ path:
 		self.next()
 
 		if !self.match(token.D_COLON) {
-			te.Tok = te.lastPathToken()
-			return te
+			break
 		}
 		self.next()
 
@@ -83,6 +84,26 @@ path:
 			return nil
 		}
 	}
+
+	if self.match(token.L_BRACK) {
+		self.next()
+		te.Key = self.parseType()
+		if te.Key == nil {
+			return nil
+		}
+		if !self.match(token.R_BRACK) {
+			self.report(caramelerrors.ParserTypeSliceClosing(span(self.curTk)))
+			return nil
+		}
+		self.next()
+		te.Element = self.parseType()
+		if te.Element == nil {
+			return nil
+		}
+	}
+
+	te.Tok = te.lastPathToken()
+	return te
 }
 
 func (self *TypeExpr) lastPathToken() token.Token {

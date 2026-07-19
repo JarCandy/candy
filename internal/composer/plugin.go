@@ -1,6 +1,7 @@
 package composer
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -49,12 +50,29 @@ func (self *ProjectPlugin) Default(projectPatch string) {
 	self.Custom.InterfacePath = valueOrDefault(self.Custom.InterfacePath, "interface"+branding.InterfaceFileExtension)
 }
 
+func DownloadProjectPlugin(url string, localPath string) error {
+	return downloadProjectPlugin(http.DefaultClient, url, localPath)
+}
+
+// DownloadProjectPlagin is kept for compatibility with the old misspelled API.
 func DownloadProjectPlagin(url string, localPath string) error {
-	resp, err := http.Get(url)
+	return DownloadProjectPlugin(url, localPath)
+}
+
+func downloadProjectPlugin(client *http.Client, url string, localPath string) (resultErr error) {
+	if client == nil {
+		return errors.New("http client is nil")
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close response body: %w", err))
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected response status: %s", resp.Status)
@@ -64,7 +82,11 @@ func DownloadProjectPlagin(url string, localPath string) error {
 	if err != nil {
 		return fmt.Errorf("error creating file: %w", err)
 	}
-	defer outFile.Close()
+	defer func() {
+		if err := outFile.Close(); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close output file: %w", err))
+		}
+	}()
 
 	_, err = io.Copy(outFile, resp.Body)
 	if err != nil {

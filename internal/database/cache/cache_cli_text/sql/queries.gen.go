@@ -3,6 +3,7 @@ package sql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -65,14 +66,18 @@ func cacheCliTextSQLAppendPagination(query string, args []any, limit int, offset
 }
 
 // cacheCliTextSQLQueryMany выполняет SQL-запрос и собирает список моделей CacheCliText.
-func cacheCliTextSQLQueryMany(ctx context.Context, db Executor, query string, args ...any) ([]modelpkg.CacheCliText, error) {
+func cacheCliTextSQLQueryMany(ctx context.Context, db Executor, query string, args ...any) (items []modelpkg.CacheCliText, resultErr error) {
 	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			resultErr = errors.Join(resultErr, fmt.Errorf("close sql rows: %w", err))
+		}
+	}()
 
-	items := make([]modelpkg.CacheCliText, 0)
+	items = make([]modelpkg.CacheCliText, 0)
 	for rows.Next() {
 		var item modelpkg.CacheCliText
 		if err := cacheCliTextSQLScan(rows, &item); err != nil {

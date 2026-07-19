@@ -142,7 +142,6 @@ func OpenDatabase(name string) (*sql.DB, error) {
 	}
 
 	path := filepath.Join(appDir, name)
-	fmt.Println(path)
 
 	conn, err := sql.Open("sqlite3", path)
 	if err != nil {

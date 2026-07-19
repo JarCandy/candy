@@ -1,0 +1,26 @@
+package("main")
+
+go::model User {
+    pub name: string = "Guest"
+    pub active: bool = true
+}
+
+go::model Team {
+    pub name: string = "Core"
+    pub members: []*User = []&User{
+        &User{name: "Alice" active: true}
+        &User{name: "Bob" active: true}
+    }
+    pub byName: map[string]*User = map[string]*User{
+        "alice": &User{name: "Alice" active: true}
+        "bob": &User{name: "Bob" active: true}
+    }
+}
+
+let core: Team = Team{
+    name: "Core"
+    members: []&User{&User{name: "Alice" active: true}}
+    byName: map[string]*User{
+        "alice": &User{name: "Alice" active: true}
+    }
+}

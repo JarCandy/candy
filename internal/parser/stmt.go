@@ -139,6 +139,9 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 	self.next()
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -257,6 +260,9 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 	}
 
 	for !self.match(token.R_PAREN, token.R_BRACE, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -271,6 +277,9 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 
 		if self.match(token.ILLEGAL) {
 			self.next()
+			continue
+		}
+		if self.consumeUnsupportedComma() {
 			continue
 		}
 		if self.match(token.IDENTIFIER, token.MUL, token.L_BRACK) {
@@ -294,12 +303,15 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 }
 
 func (self *Parser) synchronizeMethodReturns() {
-	for !self.match(token.ILLEGAL, token.IDENTIFIER, token.MUL, token.L_BRACK, token.R_PAREN, token.R_BRACE, token.EOF) {
+	for !self.match(token.ILLEGAL, token.COMMA, token.IDENTIFIER, token.MUL, token.L_BRACK, token.R_PAREN, token.R_BRACE, token.EOF) {
 		self.next()
 	}
 }
 
 func (self *Parser) consumeMemberBoundary() {
+	if self.consumeUnsupportedComma() {
+		return
+	}
 	if self.match(token.ILLEGAL) {
 		self.next()
 	}

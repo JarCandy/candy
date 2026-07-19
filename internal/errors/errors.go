@@ -194,6 +194,38 @@ func ParserUnexpectedExprToken(span Span) Error {
 	)
 }
 
+func ParserCompositeType(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected composite literal type", "Ожидался тип составного литерала"),
+		text("a collection literal must specify its element type", "литерал коллекции должен содержать тип элементов"),
+	)
+}
+
+func ParserCompositeBody(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected composite literal body", "Ожидалось тело составного литерала"),
+		text("after the literal type, expected '{'", "после типа литерала ожидался символ '{'"),
+	)
+}
+
+func ParserCompositeValue(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected composite literal value", "Ожидалось значение составного литерала"),
+		text("after a field name and ':', expected an expression", "после имени поля и ':' ожидалось выражение"),
+	)
+}
+
+func ParserCompositeClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing composite literal brace", "Ожидалась закрывающая скобка составного литерала"),
+		text("a composite literal must end with '}'", "составной литерал должен завершаться символом '}'"),
+	)
+}
+
 func ParserAttrPathSegment(span Span) Error {
 	return parsingError(
 		span,

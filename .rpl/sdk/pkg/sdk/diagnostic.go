@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -68,31 +69,47 @@ func (err *DiagnosticError) WithCause(cause error) *DiagnosticError {
 	return err
 }
 
-func PrintError(writer io.Writer, err error) {
+func PrintError(writer io.Writer, err error) error {
 	if writer == nil || err == nil {
-		return
+		return nil
 	}
 
-	diagnostic, ok := err.(*DiagnosticError)
+	var diagnostic *DiagnosticError
+	ok := errors.As(err, &diagnostic)
 	if !ok {
-		_, _ = fmt.Fprintln(writer, err.Error())
-		return
+		return writeLine(writer, err.Error())
 	}
 
 	if message := strings.TrimSpace(diagnostic.Message); message != "" {
-		_, _ = fmt.Fprintln(writer, message)
+		if err := writeLine(writer, message); err != nil {
+			return err
+		}
 	} else if diagnostic.Cause != nil {
-		_, _ = fmt.Fprintln(writer, diagnostic.Cause.Error())
+		if err := writeLine(writer, diagnostic.Cause.Error()); err != nil {
+			return err
+		}
 	}
 	if detail := strings.TrimSpace(diagnostic.Detail); detail != "" {
-		_, _ = fmt.Fprintln(writer, detail)
+		if err := writeLine(writer, detail); err != nil {
+			return err
+		}
 	}
 	if hint := strings.TrimSpace(diagnostic.Hint); hint != "" {
-		_, _ = fmt.Fprintln(writer, "hint: "+hint)
+		if err := writeLine(writer, "hint: "+hint); err != nil {
+			return err
+		}
 	}
 	if diagnostic.Cause != nil && strings.TrimSpace(diagnostic.Detail) == "" {
-		_, _ = fmt.Fprintln(writer, "cause: "+diagnostic.Cause.Error())
+		if err := writeLine(writer, "cause: "+diagnostic.Cause.Error()); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func writeLine(writer io.Writer, text string) error {
+	_, err := fmt.Fprintln(writer, text)
+	return err
 }
 
 func Text(primary string, fallback string) string {

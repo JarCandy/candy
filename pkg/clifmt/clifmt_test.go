@@ -2,6 +2,7 @@ package clifmt
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
@@ -11,6 +12,22 @@ import (
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+type errorWriter struct {
+	err error
+}
+
+func (self errorWriter) Write([]byte) (int, error) {
+	return 0, self.err
+}
+
+func TestFprintPropagatesWriterError(t *testing.T) {
+	want := errors.New("write failed")
+	err := Fprint(errorWriter{err: want}, Document{Title: T("Caramel help")}, "eng")
+	if !errors.Is(err, want) {
+		t.Fatalf("Fprint() error = %v, want %v", err, want)
+	}
+}
 
 func TestRenderUsesSelectedLanguage(t *testing.T) {
 	doc := Document{

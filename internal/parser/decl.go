@@ -108,6 +108,9 @@ func (self *Parser) parseUse() *Use {
 	self.next()
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -124,6 +127,9 @@ func (self *Parser) parseUse() *Use {
 		}
 
 		if self.match(token.STRING, token.RAW_STRING) {
+			continue
+		}
+		if self.consumeUnsupportedComma() {
 			continue
 		}
 		if self.match(token.ILLEGAL) {
@@ -184,6 +190,9 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 	self.next()
 
 	for !self.match(token.R_PAREN, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -264,6 +273,9 @@ func (self *Parser) parseDeclBody() []Stmt {
 
 	body := make([]Stmt, 0)
 	for !self.match(token.R_BRACE, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue

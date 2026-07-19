@@ -3,7 +3,9 @@ package clifmt
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -274,8 +276,13 @@ func Sprint(doc Document, language string) string {
 	return New(language).Render(doc)
 }
 
-func Print(doc Document, language string) {
-	fmt.Print(Sprint(doc, language))
+func Print(doc Document, language string) error {
+	return Fprint(os.Stdout, doc, language)
+}
+
+func Fprint(w io.Writer, doc Document, language string) error {
+	_, err := fmt.Fprint(w, Sprint(doc, language))
+	return err
 }
 
 func (self *Renderer) cacheKey(values Text) string {

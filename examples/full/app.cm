@@ -1,0 +1,42 @@
+package("main")
+
+use (
+    "github.com/caramelang/plugins/db" as db
+    "github.com/caramelang/plugins/std" as std
+)
+
+let lang = custom("github.com/caramelang/LangEngines/Go@latest")
+let environment: string = "development"
+
+#[db::sqlite::table("Project")]
+go::model Project {
+    pub id: string = go::lib("github.com/google/uuid").NewString()
+    pub name: string = "Untitled"
+    pub enabled: *bool = &true
+    pub tags: *[]string = &[]string{"caramel", "example"}
+    pub metadata: *map[string]string = &map[string]string{
+        "environment": "development"
+        "owner": "team"
+    }
+    pub translations: map[string]map[string]string = map[string]map[string]string{
+        "eng": map[string]string{"title": "Project"}
+        "ru": map[string]string{"title": "Proekt"}
+    }
+}
+
+let sample: *Project = &Project{
+    id: "project-1"
+    name: "Caramel"
+    enabled: &true
+    tags: &[]string{"language", "compiler"}
+    metadata: &map[string]string{"owner": "caramelang"}
+    translations: map[string]map[string]string{
+        "eng": map[string]string{"title": "Caramel"}
+    }
+}
+
+#[composer::file::no_edit(true)]
+go::impl Project {
+    pub save() -> error
+    pub validate() -> (Project error)
+}

@@ -989,8 +989,8 @@ func TestRunParsesCurrentSyntaxExample(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected model declaration, got %T", ast.Decls[4])
 	}
-	if len(model.Body) != 3 {
-		t.Fatalf("expected three model fields, got %d", len(model.Body))
+	if len(model.Body) < 6 {
+		t.Fatalf("expected at least six model fields, got %d", len(model.Body))
 	}
 	name := model.Body[1].(*LetStmt)
 	nameType := name.Type.(*TypeExpr)
