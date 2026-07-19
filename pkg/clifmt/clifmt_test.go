@@ -2,20 +2,37 @@ package clifmt
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
 
-	cdb "github.com/CandyCrafts/candy/internal/database"
+	cdb "github.com/caramelang/caramel/internal/database"
 	"github.com/rp1s/digreyt/translate"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
+type errorWriter struct {
+	err error
+}
+
+func (self errorWriter) Write([]byte) (int, error) {
+	return 0, self.err
+}
+
+func TestFprintPropagatesWriterError(t *testing.T) {
+	want := errors.New("write failed")
+	err := Fprint(errorWriter{err: want}, Document{Title: T("Caramel help")}, "eng")
+	if !errors.Is(err, want) {
+		t.Fatalf("Fprint() error = %v, want %v", err, want)
+	}
+}
+
 func TestRenderUsesSelectedLanguage(t *testing.T) {
 	doc := Document{
-		Title: T("Candy help", Lang("ru", "Справка Candy")),
-		Usage: T("Usage: candy", Lang("ru", "Использование: candy")),
+		Title: T("Caramel help", Lang("ru", "Справка Caramel")),
+		Usage: T("Usage: caramel", Lang("ru", "Использование: caramel")),
 		Sections: []Section{
 			{
 				Title: T("Commands", Lang("ru", "Команды")),
@@ -27,7 +44,7 @@ func TestRenderUsesSelectedLanguage(t *testing.T) {
 	}
 
 	out := stripANSI(Sprint(doc, "ru"))
-	for _, part := range []string{"Справка Candy", "Использование: candy", "Команды", "Собрать файл."} {
+	for _, part := range []string{"Справка Caramel", "Использование: caramel", "Команды", "Собрать файл."} {
 		if !strings.Contains(out, part) {
 			t.Fatalf("expected output to contain %q, got %q", part, out)
 		}
@@ -42,7 +59,7 @@ func TestRenderFallsBackToEnglish(t *testing.T) {
 	})
 
 	doc := Document{
-		Title: T("Candy help"),
+		Title: T("Caramel help"),
 		Sections: []Section{
 			{
 				Title: T("Commands"),
@@ -52,7 +69,7 @@ func TestRenderFallsBackToEnglish(t *testing.T) {
 	}
 
 	out := stripANSI(Sprint(doc, "missing"))
-	for _, part := range []string{"Candy help", "Commands", "Show help."} {
+	for _, part := range []string{"Caramel help", "Commands", "Show help."} {
 		if !strings.Contains(out, part) {
 			t.Fatalf("expected output to contain %q, got %q", part, out)
 		}
@@ -67,8 +84,8 @@ func TestRenderAutoTranslatesMissingLanguage(t *testing.T) {
 	})
 
 	doc := Document{
-		Title: T("Candy help"),
-		Usage: T("Usage: candy"),
+		Title: T("Caramel help"),
+		Usage: T("Usage: caramel"),
 		Sections: []Section{
 			{
 				Title: T("Commands"),
@@ -78,7 +95,7 @@ func TestRenderAutoTranslatesMissingLanguage(t *testing.T) {
 	}
 
 	out := stripANSI(Sprint(doc, "uk"))
-	for _, part := range []string{"eng|uk:Candy help", "eng|uk:Usage: candy", "eng|uk:Commands", "eng|uk:Build a file."} {
+	for _, part := range []string{"eng|uk:Caramel help", "eng|uk:Usage: caramel", "eng|uk:Commands", "eng|uk:Build a file."} {
 		if !strings.Contains(out, part) {
 			t.Fatalf("expected output to contain %q, got %q", part, out)
 		}
@@ -93,7 +110,7 @@ func TestRenderFallsBackWhenAutoTranslatorReturnsProviderError(t *testing.T) {
 	})
 
 	doc := Document{
-		Title: T("Candy help"),
+		Title: T("Caramel help"),
 		Sections: []Section{
 			{
 				Title: T("Commands"),
@@ -103,7 +120,7 @@ func TestRenderFallsBackWhenAutoTranslatorReturnsProviderError(t *testing.T) {
 	}
 
 	out := stripANSI(Sprint(doc, "fg"))
-	for _, part := range []string{"Candy help", "Commands", "Show help."} {
+	for _, part := range []string{"Caramel help", "Commands", "Show help."} {
 		if !strings.Contains(out, part) {
 			t.Fatalf("expected english fallback to contain %q, got %q", part, out)
 		}
@@ -121,13 +138,13 @@ func TestRenderUsesPersistedCacheEntries(t *testing.T) {
 	})
 
 	store := &fakeCLITextCache{entries: make(map[string]string)}
-	doc := Document{Title: T("Candy help")}
+	doc := Document{Title: T("Caramel help")}
 
 	renderer := New("uk")
 	renderer.Auto = true
 	renderer.cacheStore = store
 	out := stripANSI(renderer.Render(doc))
-	if !strings.Contains(out, "eng|uk:Candy help") {
+	if !strings.Contains(out, "eng|uk:Caramel help") {
 		t.Fatalf("expected first render to use auto translation, got %q", out)
 	}
 
@@ -139,7 +156,7 @@ func TestRenderUsesPersistedCacheEntries(t *testing.T) {
 	if strings.Contains(out2, "should-not-be-used") {
 		t.Fatalf("expected cached translation to be reused, got %q", out2)
 	}
-	if !strings.Contains(out2, "eng|uk:Candy help") {
+	if !strings.Contains(out2, "eng|uk:Caramel help") {
 		t.Fatalf("expected second render to reuse persisted cache value, got %q", out2)
 	}
 }

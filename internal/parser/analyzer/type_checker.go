@@ -3,9 +3,9 @@ package analyzer
 import (
 	"strings"
 
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser"
+	"github.com/caramelang/caramel/internal/parser/token"
 	diagnostics "github.com/rp1s/digreyt"
 )
 
@@ -55,7 +55,7 @@ func (self *TypeChecker) CheckLet(source []byte, let *parser.Let) TypeCheckResul
 	}
 
 	if self.Diagnostics != nil {
-		self.Diagnostics.Add(candyerrors.AnalyzerTypeMismatch(span(let.Name), declaredText, gotText))
+		self.Diagnostics.Add(caramelerrors.AnalyzerTypeMismatch(span(let.Name), declaredText, gotText))
 	}
 
 	return TypeCheckResult{Checked: true, Error: &typeErr}
@@ -90,7 +90,16 @@ func typeExprPath(source []byte, typ *parser.TypeExpr) typePath {
 			path = append(path, "[]")
 		}
 	}
-	return append(path, tokenPath(source, typ.Path)...)
+	base := tokenPath(source, typ.Path)
+	if typ.Key == nil && typ.Element == nil {
+		return append(path, base...)
+	}
+
+	container := strings.Join(base, "::")
+	key := typeFromAST(source, typ.Key)
+	element := typeFromAST(source, typ.Element)
+	container += "[" + key.String() + "]" + element.String()
+	return append(path, container)
 }
 
 func exprType(source []byte, expr *parser.Expr) typePath {
@@ -104,16 +113,28 @@ func exprType(source []byte, expr *parser.Expr) typePath {
 	case *parser.LiteralExpr:
 		return literalType(n.Value.Kind)
 	case parser.UnaryExpr:
-		return exprType(source, n.X)
+		return unaryExprType(source, n.Op, n.X)
 	case *parser.UnaryExpr:
-		return exprType(source, n.X)
+		return unaryExprType(source, n.Op, n.X)
 	case parser.BinaryExpr:
 		return binaryExprType(source, n.Left, n.Right)
 	case *parser.BinaryExpr:
 		return binaryExprType(source, n.Left, n.Right)
+	case parser.CompositeExpr:
+		return typeExprPath(source, n.Type)
+	case *parser.CompositeExpr:
+		return typeExprPath(source, n.Type)
 	default:
 		return nil
 	}
+}
+
+func unaryExprType(source []byte, op token.Token, expr *parser.Expr) typePath {
+	typ := exprType(source, expr)
+	if typ.empty() || op.Kind != token.RA {
+		return typ
+	}
+	return append(typePath{"*"}, typ...)
 }
 
 func binaryExprType(source []byte, leftExpr *parser.Expr, rightExpr *parser.Expr) typePath {
@@ -196,11 +217,11 @@ func tokenText(source []byte, tk token.Token) string {
 	return string(tk.Literal(&source))
 }
 
-func span(tk token.Token) candyerrors.Span {
-	return candyerrors.Span{
+func span(tk token.Token) caramelerrors.Span {
+	return caramelerrors.Span{
 		Start: tk.Start,
 		End:   tk.End,
-		Pos: candyerrors.Position{
+		Pos: caramelerrors.Position{
 			FileName: tk.Pos.FileName,
 			Line:     tk.Pos.Line,
 			Column:   tk.Pos.Column,

@@ -3,14 +3,14 @@ package analyzer
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/composer"
-	"github.com/CandyCrafts/candy/internal/parser"
+	"github.com/caramelang/caramel/internal/composer"
+	"github.com/caramelang/caramel/internal/parser"
 )
 
 func TestProjectChecksLetTypesBySimpleComparison(t *testing.T) {
 	source := []byte(`package("main")
 
-let title: string = "Candy"
+let title: string = "Caramel"
 let age: string = 10
 let active: bool = true
 let badFlag: bool = "true"
@@ -78,6 +78,23 @@ func TestTypeCheckerKeepsTypeModifiers(t *testing.T) {
 		t.Fatalf("expected one type error, got %#v", result.Files[0].TypeErrors)
 	}
 	assertTypeError(t, result.Files[0].TypeErrors, "name", "*[]*string", "string")
+}
+
+func TestTypeCheckerUnderstandsPointerCompositeTypes(t *testing.T) {
+	source := []byte(`let names: *[]*string = &[]&string{"hello", "world"}
+let enabled: *bool = &true
+let users: *[]User = &[]User{User{name: "first"}}
+let byName: *map[string]*User = &map[string]*User{"first": &User{name: "first"}}
+let nested: *map[string]map[string]string = &map[string]map[string]string{"outer": map[string]string{"inner": "value"}}
+`)
+	result := analyzeSource(t, source)
+
+	if result.Diagnostics.HasFatalErrors() {
+		t.Fatalf("unexpected diagnostics: %v", result.Diagnostics)
+	}
+	if result.Files[0].TypeChecks != 5 {
+		t.Fatalf("expected five type checks, got %d", result.Files[0].TypeChecks)
+	}
 }
 
 func analyzeSource(t *testing.T, source []byte) *Result {

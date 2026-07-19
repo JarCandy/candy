@@ -118,7 +118,7 @@ func LexerUnexpectedSemicolon(span Span) Error {
 	return lexerIllegal(
 		span,
 		text("Semicolons are not supported", "Точки с запятой не поддерживаются"),
-		text("remove ';'; Candy declarations do not use terminators", "уберите ';': объявления Candy не используют завершающие разделители"),
+		text("remove ';'; Caramel declarations do not use terminators", "уберите ';': объявления Caramel не используют завершающие разделители"),
 	)
 }
 
@@ -126,7 +126,7 @@ func LexerUnexpectedComma(span Span) Error {
 	return lexerIllegal(
 		span,
 		text("Commas are not supported", "Запятые не поддерживаются"),
-		text("remove ','; Candy lists do not use separators", "уберите ',': списки Candy не используют разделители"),
+		text("remove ','; Caramel lists do not use separators", "уберите ',': списки Caramel не используют разделители"),
 	)
 }
 
@@ -191,6 +191,38 @@ func ParserUnexpectedExprToken(span Span) Error {
 		span,
 		text("Unexpected expression token", "Неожиданный токен в выражении"),
 		text("expected a literal, identifier, unary minus, or parenthesized expression", "ожидался литерал, идентификатор, унарный минус или выражение в скобках"),
+	)
+}
+
+func ParserCompositeType(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected composite literal type", "Ожидался тип составного литерала"),
+		text("a collection literal must specify its element type", "литерал коллекции должен содержать тип элементов"),
+	)
+}
+
+func ParserCompositeBody(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected composite literal body", "Ожидалось тело составного литерала"),
+		text("after the literal type, expected '{'", "после типа литерала ожидался символ '{'"),
+	)
+}
+
+func ParserCompositeValue(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected composite literal value", "Ожидалось значение составного литерала"),
+		text("after a field name and ':', expected an expression", "после имени поля и ':' ожидалось выражение"),
+	)
+}
+
+func ParserCompositeClosing(span Span) Error {
+	return parsingError(
+		span,
+		text("Expected closing composite literal brace", "Ожидалась закрывающая скобка составного литерала"),
+		text("a composite literal must end with '}'", "составной литерал должен завершаться символом '}'"),
 	)
 }
 

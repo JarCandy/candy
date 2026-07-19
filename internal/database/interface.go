@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	cacheclitext "github.com/CandyCrafts/candy/internal/database/cache/cache_cli_text"
-	cacheclitextsql "github.com/CandyCrafts/candy/internal/database/cache/cache_cli_text/sql"
-	"github.com/CandyCrafts/candy/pkg/branding"
+	cacheclitext "github.com/caramelang/caramel/internal/database/cache/cache_cli_text"
+	cacheclitextsql "github.com/caramelang/caramel/internal/database/cache/cache_cli_text/sql"
+	"github.com/caramelang/caramel/pkg/branding"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -142,7 +142,6 @@ func OpenDatabase(name string) (*sql.DB, error) {
 	}
 
 	path := filepath.Join(appDir, name)
-	fmt.Println(path)
 
 	conn, err := sql.Open("sqlite3", path)
 	if err != nil {

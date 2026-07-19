@@ -1,14 +1,16 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/token"
 )
 
 type TypeExpr struct {
 	Tok       token.Token
 	Modifiers []TypeModifier
 	Path      []token.Token // last item = Type.Tok
+	Key       Type          // map[K]V key
+	Element   Type          // map[K]V value
 }
 
 type TypeModifierKind uint8
@@ -44,7 +46,7 @@ func (self *Parser) parseType() *TypeExpr {
 			modifier := TypeModifier{Kind: TypeSlice, Tok_s: self.curTk}
 			self.next()
 			if !self.match(token.R_BRACK) {
-				self.report(candyerrors.ParserTypeSliceClosing(span(self.curTk)))
+				self.report(caramelerrors.ParserTypeSliceClosing(span(self.curTk)))
 				return nil
 			}
 			modifier.Tok_e = self.curTk
@@ -58,7 +60,7 @@ func (self *Parser) parseType() *TypeExpr {
 
 path:
 	if !self.match(token.IDENTIFIER) {
-		self.report(candyerrors.ParserTypeStart(span(self.curTk)))
+		self.report(caramelerrors.ParserTypeStart(span(self.curTk)))
 		return nil
 	}
 
@@ -73,16 +75,35 @@ path:
 		self.next()
 
 		if !self.match(token.D_COLON) {
-			te.Tok = te.lastPathToken()
-			return te
+			break
 		}
 		self.next()
 
 		if !self.match(token.IDENTIFIER) {
-			self.report(candyerrors.ParserTypePathSegment(span(self.curTk)))
+			self.report(caramelerrors.ParserTypePathSegment(span(self.curTk)))
 			return nil
 		}
 	}
+
+	if self.match(token.L_BRACK) {
+		self.next()
+		te.Key = self.parseType()
+		if te.Key == nil {
+			return nil
+		}
+		if !self.match(token.R_BRACK) {
+			self.report(caramelerrors.ParserTypeSliceClosing(span(self.curTk)))
+			return nil
+		}
+		self.next()
+		te.Element = self.parseType()
+		if te.Element == nil {
+			return nil
+		}
+	}
+
+	te.Tok = te.lastPathToken()
+	return te
 }
 
 func (self *TypeExpr) lastPathToken() token.Token {

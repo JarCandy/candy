@@ -1,18 +1,39 @@
 package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" as db
-    "github.com/CandyCrafts/plugins/std" as std
+    "github.com/caramelang/plugins/db" as db
+    "github.com/caramelang/plugins/std" as std
 )
 
-let lang = custom("github.com/CandyCrafts/LangEngines/Go@latest")
+let lang = custom("github.com/caramelang/LangEngines/Go@latest")
 
 #[db::sqlite::table("User")]
 go::model User {
     pub id: string = go::lib("github.com/google/uuid").NewString()
     pub (
-        name: *[]*string = "none"
-        enabled: *bool = true
+        name: *[]*string = &[]&string{"hello", "world"}
+        names: []User = []User{
+            User{
+                name: &"hello"
+                enabled: &true
+                map: &map[string]string{
+                    "hello": "world"
+                }
+            }
+        }
+        enabled: *bool = &true
+        map: *map[string]string = &map[string]string{
+            "hello": "world"
+        }
+        mapUser: *map[string]*User = &map[string]*User{
+            "hello": &User{
+                name: &"world"
+                enabled: &true
+                map: &map[string]string{
+                    "hello": "world"
+                }
+            }
+        }
     )
 }
 

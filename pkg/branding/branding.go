@@ -1,9 +1,9 @@
-// Package branding contains stable product metadata shared by Candy packages.
+// Package branding contains stable product metadata shared by Caramel packages.
 package branding
 
 const (
-	ProjectName            = "Candy"
+	ProjectName            = "Caramel"
 	ColorArt               = false
-	DatabaseFileName       = "candy.sqlite"
+	DatabaseFileName       = "caramel.sqlite"
 	InterfaceFileExtension = ".ci"
 )

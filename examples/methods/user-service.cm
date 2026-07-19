@@ -1,0 +1,14 @@
+package("main")
+
+go::model User {
+    pub id: string = ""
+    pub name: string = "Guest"
+}
+
+go::impl User {
+    pub save()
+    pub delete() -> error
+    pub reload() -> User
+    pub validate() -> (User error)
+    pub compare() -> (bool error)
+}

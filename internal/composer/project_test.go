@@ -1,10 +1,29 @@
 package composer
 
 import (
+	"errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (self roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
+	return self(request)
+}
+
+type closeErrorBody struct {
+	io.Reader
+	err error
+}
+
+func (self closeErrorBody) Close() error {
+	return self.err
+}
 
 func TestLoadResolvesBuildPathFromWorkingDirectory(t *testing.T) {
 	originalWd, err := os.Getwd()
@@ -86,5 +105,22 @@ func TestLoadKeepsExplicitProjectName(t *testing.T) {
 
 	if project.Name != "custom" {
 		t.Fatalf("expected explicit project name custom, got %q", project.Name)
+	}
+}
+
+func TestDownloadProjectPluginPropagatesResponseCloseError(t *testing.T) {
+	want := errors.New("response close failed")
+	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       closeErrorBody{Reader: strings.NewReader("plugin"), err: want},
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	err := downloadProjectPlugin(client, "https://example.test/plugin", filepath.Join(t.TempDir(), "plugin.wasm"))
+	if !errors.Is(err, want) {
+		t.Fatalf("downloadProjectPlugin() error = %v, want %v", err, want)
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/parser/token"
-	"github.com/CandyCrafts/candy/internal/types"
+	"github.com/caramelang/caramel/internal/parser/token"
+	"github.com/caramelang/caramel/internal/types"
 )
 
 func TestParseIdentReturnsPointer(t *testing.T) {
@@ -175,7 +175,7 @@ func TestParseAttrWithMemberAccess(t *testing.T) {
 }
 
 func TestParseAttrAssignmentCreatesMapEntry(t *testing.T) {
-	p := New([]byte(`#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")]`), "test.cm")
+	p := New([]byte(`#[lang=custom("github.com/caramelang/LangEngines/Go@latest")]`), "test.cm")
 	attrs := p.parseAttrs()
 
 	if attrs == nil {
@@ -461,7 +461,7 @@ func TestRunRejectsSemicolon(t *testing.T) {
 }
 
 func TestRunRejectsTopLevelComma(t *testing.T) {
-	p := New([]byte(`package("main"), let name = "Candy"`), "test.cm")
+	p := New([]byte(`package("main"), let name = "Caramel"`), "test.cm")
 	ast, err := p.Run()
 
 	if err == nil {
@@ -539,7 +539,7 @@ func TestParsePackageRejectsSemicolon(t *testing.T) {
 }
 
 func TestParseUseImportsWithAlias(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" -> d)`), "test.cm")
+	p := New([]byte(`use ("github.com/caramelang/plugins/db" -> d)`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -549,7 +549,7 @@ func TestParseUseImportsWithAlias(t *testing.T) {
 		t.Fatalf("expected 1 import, got %d", len(decl.Imports))
 	}
 	item := decl.Imports[0]
-	if literal(p, item.Link) != "github.com/CandyCrafts/plugins/db" {
+	if literal(p, item.Link) != "github.com/caramelang/plugins/db" {
 		t.Fatalf("expected db link, got %q", literal(p, item.Link))
 	}
 	if item.Alias == nil || literal(p, *item.Alias) != "d" {
@@ -558,13 +558,13 @@ func TestParseUseImportsWithAlias(t *testing.T) {
 	if len(decl.AliasMap) != 1 {
 		t.Fatalf("expected 1 alias map entry, got %d", len(decl.AliasMap))
 	}
-	if got := literal(p, decl.AliasMap[*item.Alias]); got != "github.com/CandyCrafts/plugins/db" {
+	if got := literal(p, decl.AliasMap[*item.Alias]); got != "github.com/caramelang/plugins/db" {
 		t.Fatalf("expected alias map to point to db link, got %q", got)
 	}
 }
 
 func TestParseUseImportsWithoutAlias(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" "github.com/CandyCrafts/plugins/http")`), "test.cm")
+	p := New([]byte(`use ("github.com/caramelang/plugins/db" "github.com/caramelang/plugins/http")`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -615,7 +615,7 @@ func TestParseUseReportsInvalidImportPath(t *testing.T) {
 }
 
 func TestParseUseReportsMissingClosingParen(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db"`), "test.cm")
+	p := New([]byte(`use ("github.com/caramelang/plugins/db"`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -633,7 +633,7 @@ func TestParseUseReportsMissingClosingParen(t *testing.T) {
 }
 
 func TestParseUseWithAsAlias(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" as db)`), "test.cm")
+	p := New([]byte(`use ("github.com/caramelang/plugins/db" as db)`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil || len(decl.Imports) != 1 {
@@ -643,13 +643,13 @@ func TestParseUseWithAsAlias(t *testing.T) {
 	if item.Alias == nil || literal(p, *item.Alias) != "db" {
 		t.Fatalf("expected alias db, got %#v", item.Alias)
 	}
-	if link, ok := decl.AliasMap[*item.Alias]; !ok || literal(p, link) != "github.com/CandyCrafts/plugins/db" {
+	if link, ok := decl.AliasMap[*item.Alias]; !ok || literal(p, link) != "github.com/caramelang/plugins/db" {
 		t.Fatalf("expected alias map entry, got %#v", decl.AliasMap)
 	}
 }
 
 func TestRunParsesStandaloneLetSetting(t *testing.T) {
-	p := New([]byte(`let lang = custom("github.com/CandyCrafts/LangEngines/Go@latest")`), "test.cm")
+	p := New([]byte(`let lang = custom("github.com/caramelang/LangEngines/Go@latest")`), "test.cm")
 	ast, err := p.Run()
 
 	if err != nil {
@@ -675,7 +675,7 @@ func TestRunParsesStandaloneLetSetting(t *testing.T) {
 }
 
 func TestParseUseReportsEOFAfterAliasArrow(t *testing.T) {
-	p := New([]byte(`use ("github.com/CandyCrafts/plugins/db" ->`), "test.cm")
+	p := New([]byte(`use ("github.com/caramelang/plugins/db" ->`), "test.cm")
 	decl := p.parseUse()
 
 	if decl == nil {
@@ -696,7 +696,7 @@ func TestParseUseReportsEOFAfterAliasArrow(t *testing.T) {
 }
 
 func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
-	p := New([]byte(`pub let name: db::User = "Candy"`), "test.cm")
+	p := New([]byte(`pub let name: db::User = "Caramel"`), "test.cm")
 	decl := p.parseLetVar(true)
 
 	if decl == nil {
@@ -723,8 +723,8 @@ func TestParseLetVarWithPubTypeAndDefault(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected literal default, got %T", *decl.Defualt)
 	}
-	if literal(p, value.Value) != "Candy" {
-		t.Fatalf("expected default Candy, got %q", literal(p, value.Value))
+	if literal(p, value.Value) != "Caramel" {
+		t.Fatalf("expected default Caramel, got %q", literal(p, value.Value))
 	}
 	if p.curTk.Kind != token.EOF {
 		t.Fatalf("expected EOF after declaration, got %s", p.curTk.Kind)
@@ -813,7 +813,7 @@ func TestParseLetVarReportsMissingDefaultValue(t *testing.T) {
 }
 
 func TestRunParsesLetDeclarations(t *testing.T) {
-	p := New([]byte(`pub let name: User = "Candy"`), "test.cm")
+	p := New([]byte(`pub let name: User = "Caramel"`), "test.cm")
 	ast, err := p.Run()
 
 	if err != nil {
@@ -836,7 +836,7 @@ func TestRunParsesLetDeclarations(t *testing.T) {
 
 func TestRunParsesPubLetGroup(t *testing.T) {
 	p := New([]byte(`pub (
-    let name: string = "Candy"
+    let name: string = "Caramel"
     let id: go::type::string = go::lib("github.com/google/uuid")::NewString()
 )`), "test.cm")
 	ast, err := p.Run()
@@ -870,10 +870,10 @@ func TestRunParsesModelAndImplSyntax(t *testing.T) {
 	source := []byte(`package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" as d
+    "github.com/caramelang/plugins/db" as d
 )
 
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")]
+#[lang=custom("github.com/caramelang/LangEngines/Go@latest")]
 
 #[db::sqlite::table("User")]
 go::model User {
@@ -989,8 +989,8 @@ func TestRunParsesCurrentSyntaxExample(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected model declaration, got %T", ast.Decls[4])
 	}
-	if len(model.Body) != 3 {
-		t.Fatalf("expected three model fields, got %d", len(model.Body))
+	if len(model.Body) < 6 {
+		t.Fatalf("expected at least six model fields, got %d", len(model.Body))
 	}
 	name := model.Body[1].(*LetStmt)
 	nameType := name.Type.(*TypeExpr)
@@ -1294,7 +1294,7 @@ func TestRunRejectsCommaInPubMemberGroup(t *testing.T) {
 }
 
 func TestParseLetStmt(t *testing.T) {
-	p := New([]byte(`let name: User = "Candy"`), "test.cm")
+	p := New([]byte(`let name: User = "Caramel"`), "test.cm")
 	stmt := p.parseLetStmt()
 
 	if stmt == nil {
@@ -1334,7 +1334,7 @@ func TestParseLetStmtRejectsPub(t *testing.T) {
 
 func TestRunParsesAdjacentTopLevelDeclarations(t *testing.T) {
 	p := New([]byte(`package("main")
-let name = "Candy"`), "test.cm")
+let name = "Caramel"`), "test.cm")
 	ast, err := p.Run()
 
 	if err != nil {

@@ -2,35 +2,41 @@ package main
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 
-	"github.com/CandyCrafts/candy/internal/cli"
-	"github.com/CandyCrafts/candy/internal/database"
-	"github.com/CandyCrafts/candy/pkg/branding"
-	"github.com/CandyCrafts/candy/pkg/clifmt"
+	"github.com/caramelang/caramel/internal/cli"
+	"github.com/caramelang/caramel/internal/database"
+	"github.com/caramelang/caramel/pkg/branding"
+	"github.com/caramelang/caramel/pkg/clifmt"
 )
 
 func main() {
+	if err := run(); err != nil {
+		if printErr := cli.PrintError(os.Stderr, err); printErr != nil {
+			fmt.Fprintln(os.Stderr, printErr)
+		}
+		os.Exit(1)
+	}
+}
+
+func run() (resultErr error) {
 	conn, err := database.OpenDatabase(branding.DatabaseFileName)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
+		return err
 	}
-	defer conn.Close()
+	defer func() {
+		if closeErr := conn.Close(); closeErr != nil {
+			resultErr = stderrors.Join(resultErr, fmt.Errorf("close database: %w", closeErr))
+		}
+	}()
 
 	cdb := database.NewCacheDatabase(conn)
-	err = cdb.Init(context.Background())
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
+	if err := cdb.Init(context.Background()); err != nil {
+		return err
 	}
 
 	clifmt.SetDefaultCacheStore(cdb.CLIText())
-
-	err = cli.HandlerCmd()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	return cli.HandlerCmd()
 }

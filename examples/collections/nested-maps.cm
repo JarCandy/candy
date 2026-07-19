@@ -1,0 +1,21 @@
+package("main")
+
+let messages: map[string]map[string]string = map[string]map[string]string{
+    "eng": map[string]string{
+        "hello": "Hello"
+        "bye": "Goodbye"
+    }
+    "ru": map[string]string{
+        "hello": "Privet"
+        "bye": "Poka"
+    }
+}
+
+let settings: *map[string]map[string]map[string]string = &map[string]map[string]map[string]string{
+    "development": map[string]map[string]string{
+        "database": map[string]string{
+            "host": "localhost"
+            "port": "5432"
+        }
+    }
+}

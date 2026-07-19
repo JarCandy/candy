@@ -1,0 +1,24 @@
+package("main")
+
+use (
+    "github.com/caramelang/plugins/db" as db
+)
+
+#[lang=custom("github.com/caramelang/LangEngines/Go@latest")]
+
+#[db::sqlite::table("Account")]
+go::model Account {
+    #[db::sqlite::primary]
+    pub id: string = ""
+
+    #[db::sqlite::index]
+    pub email: string = "user@example.com"
+
+    pub active: bool = true
+}
+
+#[composer::file::no_edit(true)]
+go::impl Account {
+    #[db::go::func::delete_rec]
+    pub delete() -> error
+}

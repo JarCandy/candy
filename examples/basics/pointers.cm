@@ -1,0 +1,10 @@
+package("main")
+
+let title: *string = &"Caramel"
+let retries: *int = &3
+let enabled: *bool = &true
+let labels: *[]string = &[]string{
+    "compiler"
+    "language"
+}
+let aliases: *[]*string = &[]&string{"caramel", "cml"}

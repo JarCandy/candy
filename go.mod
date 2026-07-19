@@ -1,4 +1,4 @@
-module github.com/CandyCrafts/candy
+module github.com/caramelang/caramel
 
 go 1.25.6
 

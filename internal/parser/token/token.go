@@ -1,7 +1,7 @@
 package token
 
 import (
-	"github.com/CandyCrafts/candy/internal/types"
+	"github.com/caramelang/caramel/internal/types"
 )
 
 type Kind uint8
@@ -65,6 +65,7 @@ const (
 	COLON   // :
 	D_COLON // ::
 	DOT     // .
+	COMMA   // ,
 
 )
 
@@ -301,6 +302,8 @@ func (self Kind) String() string {
 		return "D_COLON"
 	case DOT:
 		return "DOT"
+	case COMMA:
+		return "COMMA"
 	default:
 		return "UNKNOWN"
 	}

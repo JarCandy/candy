@@ -4,9 +4,10 @@ package sql
 import (
 	stdsql "database/sql"
 	"fmt"
-	modelpkg "github.com/CandyCrafts/candy/internal/database/cache/cache_cli_text"
 	"strings"
 	"time"
+
+	modelpkg "github.com/caramelang/caramel/internal/database/cache/cache_cli_text"
 )
 
 // sqlDriverValues подготавливает значения модели CacheCliText для SQL-запросов.

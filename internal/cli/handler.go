@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/CandyCrafts/candy/internal/composer"
-	"github.com/CandyCrafts/candy/internal/parser/analyzer"
-	"github.com/CandyCrafts/candy/pkg/branding"
-	"github.com/CandyCrafts/candy/pkg/clifmt"
+	"github.com/caramelang/caramel/internal/composer"
+	"github.com/caramelang/caramel/internal/parser/analyzer"
+	"github.com/caramelang/caramel/pkg/branding"
+	"github.com/caramelang/caramel/pkg/clifmt"
 	"github.com/rp1s/digreyt/translate"
 )
 
@@ -33,7 +33,7 @@ func HandlerCmd() error {
 
 	cmd, ok := commands[args[0]]
 	if !ok {
-		return Help(nil)
+		return fmt.Errorf("unknown command %q", args[0])
 	}
 
 	return cmd(args[1:])
@@ -57,7 +57,7 @@ func parseGlobalArgs(args []string) ([]string, bool, error) {
 			return out, true, nil
 		case arg == "--lang" || arg == "-L":
 			if i+1 >= len(args) {
-				return nil, false, fmt.Errorf("usage: candy --lang <lang> <command>")
+				return nil, false, fmt.Errorf("usage: caramel --lang <lang> <command>")
 			}
 			i++
 			SetLanguage(args[i])
@@ -71,16 +71,15 @@ func parseGlobalArgs(args []string) ([]string, bool, error) {
 }
 
 func Help(args []string) error {
-	clifmt.Print(helpDocument(), CurrentLanguage)
-	return nil
+	return clifmt.Print(helpDocument(), CurrentLanguage)
 }
 
 func Build(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: candy build <path> [name]")
+		return fmt.Errorf("usage: caramel build <path> [name]")
 	}
 	if len(args) > 2 {
-		return fmt.Errorf("usage: candy build <path> [name]")
+		return fmt.Errorf("usage: caramel build <path> [name]")
 	}
 
 	project, err := composer.Load(args[0], projectNameArg(args))
@@ -105,7 +104,7 @@ func helpDocument() clifmt.Document {
 	return clifmt.Document{
 		Art:     Art(branding.ColorArt),
 		ShowArt: true,
-		Usage:   clifmt.T("candy [options] <command> [arguments]"),
+		Usage:   clifmt.T("caramel [options] <command> [arguments]"),
 		Sections: []clifmt.Section{
 			{
 				Title: clifmt.T("Commands"),
@@ -142,9 +141,9 @@ func helpDocument() clifmt.Document {
 			{
 				Title: clifmt.T("Examples"),
 				Rows: []clifmt.Row{
-					{Label: "candy build examples/models/model.cm", Description: clifmt.T("Build using the file name as project name.")},
-					{Label: "candy build src/user.cm user", Description: clifmt.T("Build with an explicit project name.")},
-					{Label: "candy --lang ru help", Description: clifmt.T("Show help in Russian.")},
+					{Label: "caramel build examples/models/1-model.cm", Description: clifmt.T("Build using the file name as project name.")},
+					{Label: "caramel build src/user.cm user", Description: clifmt.T("Build with an explicit project name.")},
+					{Label: "caramel --lang ru help", Description: clifmt.T("Show help in Russian.")},
 				},
 			},
 		},

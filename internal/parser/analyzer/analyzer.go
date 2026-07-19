@@ -3,8 +3,8 @@ package analyzer
 import (
 	stderrors "errors"
 
-	"github.com/CandyCrafts/candy/internal/composer"
-	"github.com/CandyCrafts/candy/internal/parser"
+	"github.com/caramelang/caramel/internal/composer"
+	"github.com/caramelang/caramel/internal/parser"
 	diagnostics "github.com/rp1s/digreyt"
 )
 

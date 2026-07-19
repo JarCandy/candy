@@ -3,7 +3,7 @@ package lexer
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	"github.com/caramelang/caramel/internal/parser/token"
 
 	"github.com/k0kubun/pp"
 )
@@ -13,11 +13,11 @@ func TestLexer(t *testing.T) {
 package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" // import NEW db
+    "github.com/caramelang/plugins/db" // import NEW db
 )
 
 // global attr
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")] // import NEW engine
+#[lang=custom("github.com/caramelang/LangEngines/Go@latest")] // import NEW engine
 
 #[db::sqlite::table("User")]
 go::model User {
@@ -57,18 +57,15 @@ func TestLexerRejectsSemicolon(t *testing.T) {
 	}
 }
 
-func TestLexerRejectsComma(t *testing.T) {
+func TestLexerReturnsCommaToken(t *testing.T) {
 	lex := New([]byte(","), "test.cm")
 	tk := lex.NextToken()
 
-	if tk.Kind != token.ILLEGAL {
-		t.Fatalf("expected ILLEGAL token, got %s", tk.Kind)
+	if tk.Kind != token.COMMA {
+		t.Fatalf("expected COMMA token, got %s", tk.Kind)
 	}
-	if len(lex.Diagnostics.Errors) != 1 {
-		t.Fatalf("expected one diagnostic, got %d", len(lex.Diagnostics.Errors))
-	}
-	if lex.Diagnostics.Errors[0].Arrow != "Commas are not supported" {
-		t.Fatalf("expected comma diagnostic, got %q", lex.Diagnostics.Errors[0].Arrow)
+	if len(lex.Diagnostics.Errors) != 0 {
+		t.Fatalf("expected no lexer diagnostics, got %d", len(lex.Diagnostics.Errors))
 	}
 }
 

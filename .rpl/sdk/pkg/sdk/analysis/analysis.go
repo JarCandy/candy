@@ -66,8 +66,8 @@ func NewErrorf(format string, args ...any) *DiagnosticError {
 	return rootsdk.NewErrorf(format, args...)
 }
 
-func PrintError(writer io.Writer, err error) {
-	rootsdk.PrintError(writer, err)
+func PrintError(writer io.Writer, err error) error {
+	return rootsdk.PrintError(writer, err)
 }
 
 func Text(primary string, fallback string) string {

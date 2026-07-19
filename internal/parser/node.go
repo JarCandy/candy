@@ -1,8 +1,8 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/token"
 )
 
 type AST struct {
@@ -77,13 +77,13 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 		tk = self.curTk
 		self.next()
 	} else if letKw {
-		self.report(candyerrors.ParserLetStart(span(self.curTk)))
+		self.report(caramelerrors.ParserLetStart(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return nil
 	}
 
 	if !self.match(token.IDENTIFIER) {
-		self.report(candyerrors.ParserLetName(span(self.curTk)))
+		self.report(caramelerrors.ParserLetName(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return nil
 	}
@@ -113,14 +113,14 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 		hasDefault = true
 		self.next()
 		if self.match(token.ILLEGAL, token.R_PAREN, token.R_BRACE, token.EOF) {
-			self.report(candyerrors.ParserLetValue(span(self.curTk)))
+			self.report(caramelerrors.ParserLetValue(span(self.curTk)))
 		} else {
 			decl.Defualt = self.ParseExpr()
 		}
 	}
 
 	if !hasType && !hasDefault {
-		self.report(candyerrors.ParserLetBody(span(self.curTk)))
+		self.report(caramelerrors.ParserLetBody(span(self.curTk)))
 	}
 
 	if self.match(token.ILLEGAL) {
@@ -132,7 +132,7 @@ func (self *Parser) parseLetVar(letKw bool) *Let {
 
 func (self *Parser) parseAttrs() *Attrs {
 	if !self.match(token.ATTR_S) {
-		self.report(candyerrors.ParserAttrsStart(span(self.curTk)))
+		self.report(caramelerrors.ParserAttrsStart(span(self.curTk)))
 		return nil
 	}
 
@@ -144,6 +144,9 @@ func (self *Parser) parseAttrs() *Attrs {
 	self.next()
 
 	for !self.match(token.ATTR_E, token.EOF) {
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -160,6 +163,9 @@ func (self *Parser) parseAttrs() *Attrs {
 		attrs.Attrs = append(attrs.Attrs, attr)
 		self.addAttrToMap(attrs, attr)
 
+		if self.consumeUnsupportedComma() {
+			continue
+		}
 		if self.match(token.ILLEGAL) {
 			self.next()
 			continue
@@ -169,7 +175,7 @@ func (self *Parser) parseAttrs() *Attrs {
 		}
 
 		if !self.match(token.ATTR_E, token.EOF) {
-			self.report(candyerrors.ParserAttrsSeparator(span(self.curTk)))
+			self.report(caramelerrors.ParserAttrsSeparator(span(self.curTk)))
 			self.synchronizeAttrs()
 			if self.match(token.ILLEGAL) {
 				self.next()
@@ -181,7 +187,7 @@ func (self *Parser) parseAttrs() *Attrs {
 		attrs.Tok_e = self.curTk
 		self.next()
 	} else {
-		self.report(candyerrors.ParserAttrsClosing(span(self.curTk)))
+		self.report(caramelerrors.ParserAttrsClosing(span(self.curTk)))
 	}
 
 	return attrs
@@ -200,11 +206,11 @@ func ptr[T any](value T) *T {
 	return &value
 }
 
-func span(tk token.Token) candyerrors.Span {
-	return candyerrors.Span{
+func span(tk token.Token) caramelerrors.Span {
+	return caramelerrors.Span{
 		Start: tk.Start,
 		End:   tk.End,
-		Pos: candyerrors.Position{
+		Pos: caramelerrors.Position{
 			FileName: tk.Pos.FileName,
 			Line:     tk.Pos.Line,
 			Column:   tk.Pos.Column,

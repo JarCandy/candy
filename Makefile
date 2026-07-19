@@ -1,4 +1,4 @@
-APP ?= candy
+APP ?= caramel
 PKG ?= ./cmd/release
 BIN_DIR ?= bin
 INSTALL_DIR ?= $(HOME)/.local/bin
