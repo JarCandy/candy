@@ -1,7 +1,7 @@
 package token
 
 import (
-	"github.com/CandyCrafts/candy/internal/types"
+	"github.com/caramelang/caramel/internal/types"
 )
 
 type Kind uint8

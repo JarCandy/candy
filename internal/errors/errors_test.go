@@ -50,8 +50,8 @@ func TestErrorAutoTranslatesMissingLanguage(t *testing.T) {
 
 	translator := translate.NewMyMemoryTranslator()
 	translator.Client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-		if got := req.URL.Query().Get("langpair"); got != "en|candy" {
-			t.Errorf("expected MyMemory langpair en|candy, got %q", got)
+		if got := req.URL.Query().Get("langpair"); got != "en|caramel" {
+			t.Errorf("expected MyMemory langpair en|caramel, got %q", got)
 			return &http.Response{
 				StatusCode: http.StatusBadRequest,
 				Status:     "400 Bad Request",
@@ -64,13 +64,13 @@ func TestErrorAutoTranslatesMissingLanguage(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
-			Body:       io.NopCloser(strings.NewReader(`{"responseData":{"translatedText":"en|candy:` + text + `"}}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"responseData":{"translatedText":"en|caramel:` + text + `"}}`)),
 			Header:     make(http.Header),
 			Request:    req,
 		}, nil
 	})}
 
-	translate.SetLanguage("candy")
+	translate.SetLanguage("caramel")
 	translate.SetAutoTranslator(translator)
 	defer func() {
 		translate.SetLanguage(prevLanguage)
@@ -83,10 +83,10 @@ func TestErrorAutoTranslatesMissingLanguage(t *testing.T) {
 		t.Fatalf("LocalizeAuto() failed: %v", translateErr)
 	}
 
-	if localized.Message != "en|candy:parse error" {
+	if localized.Message != "en|caramel:parse error" {
 		t.Fatalf("expected auto-translated message, got %q", localized.Message)
 	}
-	if localized.Arrow != "en|candy:Expected argument value" {
+	if localized.Arrow != "en|caramel:Expected argument value" {
 		t.Fatalf("expected auto-translated arrow, got %q", localized.Arrow)
 	}
 }

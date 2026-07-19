@@ -118,7 +118,7 @@ func LexerUnexpectedSemicolon(span Span) Error {
 	return lexerIllegal(
 		span,
 		text("Semicolons are not supported", "Точки с запятой не поддерживаются"),
-		text("remove ';'; Candy declarations do not use terminators", "уберите ';': объявления Candy не используют завершающие разделители"),
+		text("remove ';'; Caramel declarations do not use terminators", "уберите ';': объявления Caramel не используют завершающие разделители"),
 	)
 }
 
@@ -126,7 +126,7 @@ func LexerUnexpectedComma(span Span) Error {
 	return lexerIllegal(
 		span,
 		text("Commas are not supported", "Запятые не поддерживаются"),
-		text("remove ','; Candy lists do not use separators", "уберите ',': списки Candy не используют разделители"),
+		text("remove ','; Caramel lists do not use separators", "уберите ',': списки Caramel не используют разделители"),
 	)
 }
 

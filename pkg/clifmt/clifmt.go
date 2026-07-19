@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CandyCrafts/candy/internal/database"
+	"github.com/caramelang/caramel/internal/database"
 	"github.com/rp1s/colorista"
 	"github.com/rp1s/digreyt/translate"
 )

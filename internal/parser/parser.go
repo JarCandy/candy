@@ -1,9 +1,9 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/lexer"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/lexer"
+	"github.com/caramelang/caramel/internal/parser/token"
 	diagnostics "github.com/rp1s/digreyt"
 )
 
@@ -83,7 +83,7 @@ func (self *Parser) Run() (*AST, error) {
 			}
 		default:
 			if self.curTk.Kind != token.ILLEGAL {
-				self.report(candyerrors.ParserUnexpectedTopLevel(span(self.curTk)))
+				self.report(caramelerrors.ParserUnexpectedTopLevel(span(self.curTk)))
 			}
 			self.synchronizeTopLevel()
 		}

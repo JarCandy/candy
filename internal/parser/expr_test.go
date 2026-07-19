@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	"github.com/caramelang/caramel/internal/parser/token"
 )
 
 func TestParseExprPrecedence(t *testing.T) {

@@ -1,5 +1,5 @@
 name: Bug report
-description: Сообщить о воспроизводимой ошибке Candy.
+description: Сообщить о воспроизводимой ошибке Caramel.
 title: "bug: "
 labels:
   - bug
@@ -21,7 +21,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Версия Candy
+      label: Версия Caramel
       description: Укажите версию из справки или commit SHA.
       placeholder: 26.7.18.1 или abc1234
     validations:
@@ -40,8 +40,8 @@ body:
     id: source
     attributes:
       label: Минимальный пример
-      description: Добавьте минимальный исходный код Candy, который воспроизводит ошибку.
-      render: candy
+      description: Добавьте минимальный исходный код Caramel, который воспроизводит ошибку.
+      render: caramel
     validations:
       required: true
 

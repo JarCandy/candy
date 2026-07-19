@@ -3,7 +3,7 @@ package lexer
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	"github.com/caramelang/caramel/internal/parser/token"
 
 	"github.com/k0kubun/pp"
 )
@@ -13,11 +13,11 @@ func TestLexer(t *testing.T) {
 package("main")
 
 use (
-    "github.com/CandyCrafts/plugins/db" // import NEW db
+    "github.com/caramelang/plugins/db" // import NEW db
 )
 
 // global attr
-#[lang=custom("github.com/CandyCrafts/LangEngines/Go@latest")] // import NEW engine
+#[lang=custom("github.com/caramelang/LangEngines/Go@latest")] // import NEW engine
 
 #[db::sqlite::table("User")]
 go::model User {

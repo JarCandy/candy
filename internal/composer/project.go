@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/CandyCrafts/candy/internal/parser"
+	"github.com/caramelang/caramel/internal/parser"
 )
 
 type Project struct {

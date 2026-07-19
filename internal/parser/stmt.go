@@ -1,8 +1,8 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/token"
 )
 
 type LetStmt struct {
@@ -20,7 +20,7 @@ func (self LetStmt) Token() token.Token {
 
 func (self *Parser) parseLetStmt() *LetStmt {
 	if self.match(token.PUB) {
-		self.report(candyerrors.ParserLetStart(span(self.curTk)))
+		self.report(caramelerrors.ParserLetStart(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return nil
 	}
@@ -73,7 +73,7 @@ func (self *Parser) parseBlockStmt() Stmt {
 		return self.parseMemberStmt()
 	default:
 		if self.curTk.Kind != token.ILLEGAL {
-			self.report(candyerrors.ParserUnexpectedBlockToken(span(self.curTk)))
+			self.report(caramelerrors.ParserUnexpectedBlockToken(span(self.curTk)))
 		}
 		return nil
 	}
@@ -102,7 +102,7 @@ func (self *Parser) parseMemberStmtWithPub(defaultPub bool) Stmt {
 	}
 
 	if !self.match(token.IDENTIFIER) {
-		self.report(candyerrors.ParserMemberName(span(self.curTk)))
+		self.report(caramelerrors.ParserMemberName(span(self.curTk)))
 		return nil
 	}
 
@@ -132,7 +132,7 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 	self.next()
 
 	if !self.match(token.L_PAREN) {
-		self.report(candyerrors.ParserPubGroupStart(span(self.curTk)))
+		self.report(caramelerrors.ParserPubGroupStart(span(self.curTk)))
 		self.synchronizeBlock()
 		return stmts
 	}
@@ -154,7 +154,7 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 			}
 		} else {
 			if self.curTk.Kind != token.ILLEGAL {
-				self.report(candyerrors.ParserUnexpectedBlockToken(span(self.curTk)))
+				self.report(caramelerrors.ParserUnexpectedBlockToken(span(self.curTk)))
 			}
 			self.synchronizeBlock()
 		}
@@ -164,7 +164,7 @@ func (self *Parser) parsePubMemberGroup() []Stmt {
 	if self.match(token.R_PAREN) {
 		self.next()
 	} else {
-		self.report(candyerrors.ParserPubGroupClosing(span(self.curTk)))
+		self.report(caramelerrors.ParserPubGroupClosing(span(self.curTk)))
 	}
 
 	if self.match(token.ILLEGAL) {
@@ -199,14 +199,14 @@ func (self *Parser) parseMemberLetTail(tk token.Token, name token.Token, pub boo
 		hasDefault = true
 		self.next()
 		if self.match(token.ILLEGAL, token.R_PAREN, token.R_BRACE, token.EOF) {
-			self.report(candyerrors.ParserLetValue(span(self.curTk)))
+			self.report(caramelerrors.ParserLetValue(span(self.curTk)))
 		} else {
 			decl.Defualt = self.ParseExpr()
 		}
 	}
 
 	if !hasType && !hasDefault {
-		self.report(candyerrors.ParserLetBody(span(self.curTk)))
+		self.report(caramelerrors.ParserLetBody(span(self.curTk)))
 	}
 
 	self.consumeMemberBoundary()
@@ -251,7 +251,7 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 	self.next()
 
 	if self.match(token.R_PAREN) {
-		self.report(candyerrors.ParserMethodReturn(span(self.curTk)))
+		self.report(caramelerrors.ParserMethodReturn(span(self.curTk)))
 		self.next()
 		return
 	}
@@ -277,7 +277,7 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 			continue
 		}
 		if !self.match(token.R_PAREN, token.R_BRACE, token.EOF) {
-			self.report(candyerrors.ParserMethodReturnSeparator(span(self.curTk)))
+			self.report(caramelerrors.ParserMethodReturnSeparator(span(self.curTk)))
 			self.synchronizeMethodReturns()
 			if self.match(token.ILLEGAL) {
 				self.next()
@@ -290,7 +290,7 @@ func (self *Parser) parseMethodReturns(method *MethodStmt) {
 		return
 	}
 
-	self.report(candyerrors.ParserMethodReturnsClosing(span(self.curTk)))
+	self.report(caramelerrors.ParserMethodReturnsClosing(span(self.curTk)))
 }
 
 func (self *Parser) synchronizeMethodReturns() {

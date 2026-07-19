@@ -1,8 +1,8 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/token"
 )
 
 type TypeExpr struct {
@@ -44,7 +44,7 @@ func (self *Parser) parseType() *TypeExpr {
 			modifier := TypeModifier{Kind: TypeSlice, Tok_s: self.curTk}
 			self.next()
 			if !self.match(token.R_BRACK) {
-				self.report(candyerrors.ParserTypeSliceClosing(span(self.curTk)))
+				self.report(caramelerrors.ParserTypeSliceClosing(span(self.curTk)))
 				return nil
 			}
 			modifier.Tok_e = self.curTk
@@ -58,7 +58,7 @@ func (self *Parser) parseType() *TypeExpr {
 
 path:
 	if !self.match(token.IDENTIFIER) {
-		self.report(candyerrors.ParserTypeStart(span(self.curTk)))
+		self.report(caramelerrors.ParserTypeStart(span(self.curTk)))
 		return nil
 	}
 
@@ -79,7 +79,7 @@ path:
 		self.next()
 
 		if !self.match(token.IDENTIFIER) {
-			self.report(candyerrors.ParserTypePathSegment(span(self.curTk)))
+			self.report(caramelerrors.ParserTypePathSegment(span(self.curTk)))
 			return nil
 		}
 	}

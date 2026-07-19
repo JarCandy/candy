@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/CandyCrafts/candy/internal/cli"
-	"github.com/CandyCrafts/candy/internal/database"
-	"github.com/CandyCrafts/candy/pkg/branding"
-	"github.com/CandyCrafts/candy/pkg/clifmt"
+	"github.com/caramelang/caramel/internal/cli"
+	"github.com/caramelang/caramel/internal/database"
+	"github.com/caramelang/caramel/pkg/branding"
+	"github.com/caramelang/caramel/pkg/clifmt"
 )
 
 func main() {

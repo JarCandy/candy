@@ -4,9 +4,10 @@ package sql
 import (
 	"context"
 	"fmt"
-	modelpkg "github.com/CandyCrafts/candy/internal/database/cache/cache_cli_text"
 	"sort"
 	"strings"
+
+	modelpkg "github.com/caramelang/caramel/internal/database/cache/cache_cli_text"
 )
 
 // cacheCliTextSQLBuildWhere собирает SQL WHERE-часть и аргументы из карты фильтров.

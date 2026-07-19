@@ -1,9 +1,9 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/token"
-	"github.com/CandyCrafts/candy/internal/types"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/token"
+	"github.com/caramelang/caramel/internal/types"
 )
 
 const (
@@ -144,14 +144,14 @@ func (self *Parser) parsePrefix() *Expr {
 		if self.curTk.Kind == token.R_PAREN {
 			self.next()
 		} else {
-			self.report(candyerrors.ParserMissingClosingParen(span(self.curTk)))
+			self.report(caramelerrors.ParserMissingClosingParen(span(self.curTk)))
 		}
 		return expr
 
 	default:
 		tk := self.curTk
 		if tk.Kind != token.ILLEGAL {
-			self.report(candyerrors.ParserUnexpectedExprToken(span(tk)))
+			self.report(caramelerrors.ParserUnexpectedExprToken(span(tk)))
 		}
 		self.next()
 		return ptr[Expr](InvalidExpr{Tok: tk})
@@ -205,7 +205,7 @@ func (self Arg) Token() token.Token { return self.Tok }
 // eats all the tokens, you get a new one in the parser state
 func (self *Parser) parseAttr() *Attr {
 	if !self.matchAttrPathSegment() {
-		self.report(candyerrors.ParserAttrStart(span(self.curTk)))
+		self.report(caramelerrors.ParserAttrStart(span(self.curTk)))
 		return nil
 	}
 
@@ -217,7 +217,7 @@ func (self *Parser) parseAttr() *Attr {
 
 	for !self.match(token.R_PAREN, token.ATTR_E, token.EOF) {
 		if !self.matchAttrPathSegment() {
-			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
+			self.report(caramelerrors.ParserAttrPathSegment(span(self.curTk)))
 			self.synchronizeArgs()
 			return nil
 		}
@@ -245,7 +245,7 @@ func (self *Parser) parseAttr() *Attr {
 		self.next()
 
 		if self.match(token.EOF) {
-			self.report(candyerrors.ParserAttrPathSegment(span(self.curTk)))
+			self.report(caramelerrors.ParserAttrPathSegment(span(self.curTk)))
 			return nil
 		}
 
@@ -279,7 +279,7 @@ func (self *Parser) parseAttrAssignmentValue() (*Expr, bool) {
 	if self.match_group(token.G_LITERAL) {
 		return self.parseExpr(Lowest), true
 	}
-	self.report(candyerrors.ParserArgValue(span(self.curTk)))
+	self.report(caramelerrors.ParserArgValue(span(self.curTk)))
 	return nil, false
 }
 
@@ -293,7 +293,7 @@ func argsToExprs(args []*Arg) []*Expr {
 
 func (self *Parser) parseArgs() []*Arg {
 	if !self.match(token.L_PAREN) {
-		self.report(candyerrors.ParserArgsStart(span(self.curTk)))
+		self.report(caramelerrors.ParserArgsStart(span(self.curTk)))
 		return nil
 	}
 	self.next()
@@ -310,7 +310,7 @@ func (self *Parser) parseArgs() []*Arg {
 		arg := self.parseArg()
 		if arg == nil {
 			if len(self.Diagnostics.Errors) == errCount {
-				self.report(candyerrors.ParserArg(span(self.curTk)))
+				self.report(caramelerrors.ParserArg(span(self.curTk)))
 			}
 			self.synchronizeArgs()
 			if self.match(token.ILLEGAL) {
@@ -329,7 +329,7 @@ func (self *Parser) parseArgs() []*Arg {
 		}
 
 		if !self.match(token.R_PAREN, token.EOF) {
-			self.report(candyerrors.ParserArgSeparator(span(self.curTk)))
+			self.report(caramelerrors.ParserArgSeparator(span(self.curTk)))
 			self.synchronizeArgs()
 			if self.match(token.ILLEGAL) {
 				self.next()
@@ -340,7 +340,7 @@ func (self *Parser) parseArgs() []*Arg {
 	if self.match(token.R_PAREN) {
 		self.next()
 	} else {
-		self.report(candyerrors.ParserArgsClosingParen(span(self.curTk)))
+		self.report(caramelerrors.ParserArgsClosingParen(span(self.curTk)))
 	}
 	return args
 }
@@ -362,7 +362,7 @@ func (self *Parser) parseArgValue(name *token.Token) *Arg {
 		arg := self.parseAttr()
 		if arg == nil {
 			if len(self.Diagnostics.Errors) == errCount {
-				self.report(candyerrors.ParserAttrAccess(span(self.curTk)))
+				self.report(caramelerrors.ParserAttrAccess(span(self.curTk)))
 			}
 			return nil
 		}
@@ -378,7 +378,7 @@ func (self *Parser) parseArgValue(name *token.Token) *Arg {
 	}
 
 	if !self.match_group(token.G_LITERAL) {
-		self.report(candyerrors.ParserArgValue(span(self.curTk)))
+		self.report(caramelerrors.ParserArgValue(span(self.curTk)))
 		return nil
 	}
 
@@ -396,6 +396,6 @@ func (self *Parser) parseArgValue(name *token.Token) *Arg {
 	return arg
 }
 
-func (self *Parser) report(err candyerrors.Error) {
+func (self *Parser) report(err caramelerrors.Error) {
 	self.Diagnostics.Add(err)
 }

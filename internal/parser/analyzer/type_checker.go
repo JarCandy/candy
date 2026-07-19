@@ -3,9 +3,9 @@ package analyzer
 import (
 	"strings"
 
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser"
+	"github.com/caramelang/caramel/internal/parser/token"
 	diagnostics "github.com/rp1s/digreyt"
 )
 
@@ -55,7 +55,7 @@ func (self *TypeChecker) CheckLet(source []byte, let *parser.Let) TypeCheckResul
 	}
 
 	if self.Diagnostics != nil {
-		self.Diagnostics.Add(candyerrors.AnalyzerTypeMismatch(span(let.Name), declaredText, gotText))
+		self.Diagnostics.Add(caramelerrors.AnalyzerTypeMismatch(span(let.Name), declaredText, gotText))
 	}
 
 	return TypeCheckResult{Checked: true, Error: &typeErr}
@@ -196,11 +196,11 @@ func tokenText(source []byte, tk token.Token) string {
 	return string(tk.Literal(&source))
 }
 
-func span(tk token.Token) candyerrors.Span {
-	return candyerrors.Span{
+func span(tk token.Token) caramelerrors.Span {
+	return caramelerrors.Span{
 		Start: tk.Start,
 		End:   tk.End,
-		Pos: candyerrors.Position{
+		Pos: caramelerrors.Position{
 			FileName: tk.Pos.FileName,
 			Line:     tk.Pos.Line,
 			Column:   tk.Pos.Column,

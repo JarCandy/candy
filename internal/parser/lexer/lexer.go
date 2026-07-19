@@ -3,8 +3,8 @@ package lexer
 import (
 	"unicode/utf8"
 
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	. "github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	. "github.com/caramelang/caramel/internal/parser/token"
 	diagnostics "github.com/rp1s/digreyt"
 )
 
@@ -169,7 +169,7 @@ func (self *Lexer) NextToken() Token {
 			return self.tok(RRT)
 		}
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnexpectedLess(span(tk)))
+		self.report(caramelerrors.LexerUnexpectedLess(span(tk)))
 		return tk
 
 	case '-':
@@ -208,7 +208,7 @@ func (self *Lexer) NextToken() Token {
 			return self.tok(ATTR_S)
 		}
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnexpectedSharp(span(tk)))
+		self.report(caramelerrors.LexerUnexpectedSharp(span(tk)))
 		return tk
 
 	case '=':
@@ -241,7 +241,7 @@ func (self *Lexer) NextToken() Token {
 		return self.tok(R_BRACE)
 	case '[':
 		if self.attrDepth > 0 {
-			self.report(candyerrors.LexerNestedAttribute(span(self.tok(ILLEGAL))))
+			self.report(caramelerrors.LexerNestedAttribute(span(self.tok(ILLEGAL))))
 			self.attrDepth++
 		}
 		return self.tok(L_BRACK)
@@ -255,11 +255,11 @@ func (self *Lexer) NextToken() Token {
 		return self.tok(R_BRACK)
 	case ';':
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnexpectedSemicolon(span(tk)))
+		self.report(caramelerrors.LexerUnexpectedSemicolon(span(tk)))
 		return tk
 	case ',':
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnexpectedComma(span(tk)))
+		self.report(caramelerrors.LexerUnexpectedComma(span(tk)))
 		return tk
 
 	case '"':
@@ -278,7 +278,7 @@ func (self *Lexer) NextToken() Token {
 			return self.readIdent()
 		}
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnknownCharacter(span(tk)))
+		self.report(caramelerrors.LexerUnknownCharacter(span(tk)))
 		return tk
 	}
 }
@@ -344,7 +344,7 @@ func (self *Lexer) multiLineComment() Token {
 	for {
 		if self.rn == 0 {
 			tk := self.tok(ILLEGAL)
-			self.report(candyerrors.LexerUnterminatedMultilineComment(span(tk)))
+			self.report(caramelerrors.LexerUnterminatedMultilineComment(span(tk)))
 			self.unfreeze()
 			self.stabilize()
 			return tk
@@ -381,7 +381,7 @@ func (self *Lexer) readString() Token {
 
 	if self.rn == 0 {
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnterminatedString(span(tk)))
+		self.report(caramelerrors.LexerUnterminatedString(span(tk)))
 		self.unfreeze()
 		self.stabilize()
 		return tk
@@ -398,7 +398,7 @@ func (self *Lexer) readRawString() Token {
 	}
 	if self.rn == 0 {
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerUnterminatedRawString(span(tk)))
+		self.report(caramelerrors.LexerUnterminatedRawString(span(tk)))
 		self.unfreeze()
 		self.stabilize()
 		return tk
@@ -416,7 +416,7 @@ func (self *Lexer) readChar() Token {
 	}
 	if self.rn != '\'' {
 		tk := self.tok(ILLEGAL)
-		self.report(candyerrors.LexerInvalidCharacterLiteral(span(tk)))
+		self.report(caramelerrors.LexerInvalidCharacterLiteral(span(tk)))
 		return tk
 	}
 	self.advance()
@@ -487,7 +487,7 @@ func (self *Lexer) readNumber(first rune) Token {
 	return self.tok(INTEGER)
 }
 
-func (self *Lexer) report(err candyerrors.Error) {
+func (self *Lexer) report(err caramelerrors.Error) {
 	if self.Diagnostics == nil {
 		return
 	}
@@ -495,11 +495,11 @@ func (self *Lexer) report(err candyerrors.Error) {
 	self.Diagnostics.Add(err)
 }
 
-func span(tk Token) candyerrors.Span {
-	return candyerrors.Span{
+func span(tk Token) caramelerrors.Span {
+	return caramelerrors.Span{
 		Start: tk.Start,
 		End:   tk.End,
-		Pos: candyerrors.Position{
+		Pos: caramelerrors.Position{
 			FileName: tk.Pos.FileName,
 			Line:     tk.Pos.Line,
 			Column:   tk.Pos.Column,

@@ -3,14 +3,14 @@ package analyzer
 import (
 	"testing"
 
-	"github.com/CandyCrafts/candy/internal/composer"
-	"github.com/CandyCrafts/candy/internal/parser"
+	"github.com/caramelang/caramel/internal/composer"
+	"github.com/caramelang/caramel/internal/parser"
 )
 
 func TestProjectChecksLetTypesBySimpleComparison(t *testing.T) {
 	source := []byte(`package("main")
 
-let title: string = "Candy"
+let title: string = "Caramel"
 let age: string = 10
 let active: bool = true
 let badFlag: bool = "true"

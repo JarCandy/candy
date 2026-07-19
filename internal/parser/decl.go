@@ -1,8 +1,8 @@
 package parser
 
 import (
-	candyerrors "github.com/CandyCrafts/candy/internal/errors"
-	"github.com/CandyCrafts/candy/internal/parser/token"
+	caramelerrors "github.com/caramelang/caramel/internal/errors"
+	"github.com/caramelang/caramel/internal/parser/token"
 )
 
 type Package struct {
@@ -80,7 +80,7 @@ func (self *Parser) parsePackage() *Package {
 		if len(attr.Path) > 1 {
 			errTk = attr.Path[1]
 		}
-		self.report(candyerrors.ParserPackagePath(span(errTk)))
+		self.report(caramelerrors.ParserPackagePath(span(errTk)))
 	}
 
 	return &Package{Tok: tk, Args: attr.Args}
@@ -101,7 +101,7 @@ func (self *Parser) parseUse() *Use {
 	}
 
 	if !self.match(token.L_PAREN) {
-		self.report(candyerrors.ParserUseStart(span(self.curTk)))
+		self.report(caramelerrors.ParserUseStart(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return use
 	}
@@ -131,7 +131,7 @@ func (self *Parser) parseUse() *Use {
 		}
 
 		if !self.match(token.R_PAREN, token.EOF) {
-			self.report(candyerrors.ParserUseSeparator(span(self.curTk)))
+			self.report(caramelerrors.ParserUseSeparator(span(self.curTk)))
 			self.synchronizeUse()
 		}
 	}
@@ -139,7 +139,7 @@ func (self *Parser) parseUse() *Use {
 	if self.match(token.R_PAREN) {
 		self.next()
 	} else {
-		self.report(candyerrors.ParserUseClosingParen(span(self.curTk)))
+		self.report(caramelerrors.ParserUseClosingParen(span(self.curTk)))
 	}
 
 	return use
@@ -147,7 +147,7 @@ func (self *Parser) parseUse() *Use {
 
 func (self *Parser) parseUseImport() (UseImport, bool) {
 	if !self.match(token.STRING, token.RAW_STRING) {
-		self.report(candyerrors.ParserUsePath(span(self.curTk)))
+		self.report(caramelerrors.ParserUsePath(span(self.curTk)))
 		return UseImport{}, false
 	}
 
@@ -157,7 +157,7 @@ func (self *Parser) parseUseImport() (UseImport, bool) {
 	if self.match(token.AS, token.TRANSITION) {
 		self.next()
 		if !self.match(token.IDENTIFIER) {
-			self.report(candyerrors.ParserUseAlias(span(self.curTk)))
+			self.report(caramelerrors.ParserUseAlias(span(self.curTk)))
 			return item, true
 		}
 		alias := self.curTk
@@ -177,7 +177,7 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 	self.next()
 
 	if !self.match(token.L_PAREN) {
-		self.report(candyerrors.ParserPubGroupStart(span(self.curTk)))
+		self.report(caramelerrors.ParserPubGroupStart(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return decls
 	}
@@ -190,7 +190,7 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 		}
 
 		if !self.match(token.PUB, token.LET) {
-			self.report(candyerrors.ParserLetStart(span(self.curTk)))
+			self.report(caramelerrors.ParserLetStart(span(self.curTk)))
 			self.synchronizePubGroup()
 			continue
 		}
@@ -206,7 +206,7 @@ func (self *Parser) parsePubDeclGroup() []Decl {
 	if self.match(token.R_PAREN) {
 		self.next()
 	} else {
-		self.report(candyerrors.ParserPubGroupClosing(span(self.curTk)))
+		self.report(caramelerrors.ParserPubGroupClosing(span(self.curTk)))
 	}
 
 	return decls
@@ -219,7 +219,7 @@ func (self *Parser) parseQualifiedDecl() Decl {
 	}
 
 	if !self.match(token.IDENTIFIER) {
-		self.report(candyerrors.ParserDeclName(span(self.curTk)))
+		self.report(caramelerrors.ParserDeclName(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return nil
 	}
@@ -232,7 +232,7 @@ func (self *Parser) parseQualifiedDecl() Decl {
 
 func (self *Parser) parseQualifiedDeclPath() ([]token.Token, bool) {
 	if !self.match(token.IDENTIFIER) {
-		self.report(candyerrors.ParserDeclKind(span(self.curTk)))
+		self.report(caramelerrors.ParserDeclKind(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return nil, false
 	}
@@ -243,7 +243,7 @@ func (self *Parser) parseQualifiedDeclPath() ([]token.Token, bool) {
 	for self.match(token.D_COLON) {
 		self.next()
 		if !self.match(token.IDENTIFIER) {
-			self.report(candyerrors.ParserDeclKind(span(self.curTk)))
+			self.report(caramelerrors.ParserDeclKind(span(self.curTk)))
 			self.synchronizeTopLevel()
 			return nil, false
 		}
@@ -256,7 +256,7 @@ func (self *Parser) parseQualifiedDeclPath() ([]token.Token, bool) {
 
 func (self *Parser) parseDeclBody() []Stmt {
 	if !self.match(token.L_BRACE) {
-		self.report(candyerrors.ParserDeclBodyStart(span(self.curTk)))
+		self.report(caramelerrors.ParserDeclBodyStart(span(self.curTk)))
 		self.synchronizeTopLevel()
 		return nil
 	}
@@ -285,7 +285,7 @@ func (self *Parser) parseDeclBody() []Stmt {
 	if self.match(token.R_BRACE) {
 		self.next()
 	} else {
-		self.report(candyerrors.ParserDeclBodyClosing(span(self.curTk)))
+		self.report(caramelerrors.ParserDeclBodyClosing(span(self.curTk)))
 	}
 
 	return body

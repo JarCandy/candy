@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/CandyCrafts/candy/pkg/branding"
+	"github.com/caramelang/caramel/pkg/branding"
 )
 
 type TypePlugin uint8

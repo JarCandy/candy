@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/CandyCrafts/candy/internal/parser"
+	"github.com/caramelang/caramel/internal/parser"
 	"github.com/rp1s/lipa"
 )
 
@@ -40,7 +40,7 @@ func run() error {
 		p.Diagnostics.Print(os.Stderr)
 	}
 
-	options := []lipa.Option{lipa.WithTitle("Candy Parser Tree")}
+	options := []lipa.Option{lipa.WithTitle("Caramel Parser Tree")}
 	if outputPath := os.Getenv("LIPA_OUT"); outputPath != "" {
 		options = append(options, lipa.WithOutputPath(outputPath))
 	}
