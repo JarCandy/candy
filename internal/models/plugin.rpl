@@ -1,0 +1,14 @@
+package models
+
+model PluginPubInfo {
+	Name string
+	Author string
+	Version string
+}
+
+model Plugin {
+    Type uint32 // LE, GLP, APIP, WBC
+	PubInfo PluginPubInfo
+	IsGlobal bool = true
+	PathWasmBin string // home->NameBin
+}
