@@ -1,0 +1,38 @@
+{
+  "models": {
+    "CacheCliText": [
+      "cache_cli_text/model.gen.go",
+      "cache_cli_text/sql/queries.gen.go",
+      "cache_cli_text/sql/scan.gen.go",
+      "cache_cli_text/sql/schema.gen.go"
+    ],
+    "Plugin": [
+      "plugin/model.gen.go"
+    ],
+    "PluginPubInfo": [
+      "plugin_pub_info/model.gen.go"
+    ],
+    "Plugins": [
+      "plugins/model.gen.go",
+      "plugins/sql/queries.gen.go",
+      "plugins/sql/scan.gen.go",
+      "plugins/sql/schema.gen.go"
+    ],
+    "Position": [
+      "position/model.gen.go"
+    ],
+    "SqlPlugin": [
+      "sql_plugin/model.gen.go",
+      "sql_plugin/sql/queries.gen.go",
+      "sql_plugin/sql/scan.gen.go",
+      "sql_plugin/sql/schema.gen.go"
+    ],
+    "Token": [
+      "token/model.gen.go"
+    ],
+    "__types__": [
+      "types.gen.go",
+      "types/types.gen.go"
+    ]
+  }
+}
