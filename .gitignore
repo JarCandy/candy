@@ -1,6 +1,50 @@
-**/.DS_Store
-*.wasm
-/caramel
+# Build artifacts
 /bin/
-pkg/digreyt/
-pkg/lipa/
+/build/
+/dist/
+/caramel
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.wasm
+
+# Test, coverage, and profiling output
+*.out
+coverage/
+coverage.*
+*.coverprofile
+*.prof
+*.pprof
+
+# Go workspace files (local multi-module setup)
+go.work
+go.work.sum
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files and directories
+.cache/
+.tmp/
+tmp/
+temp/
+*.tmp
+*.log

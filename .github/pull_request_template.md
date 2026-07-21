@@ -1,32 +1,32 @@
-## Что изменено
+## Summary
 
-Кратко опишите результат и причину изменения.
+Briefly describe what changed and why.
 
-## Тип изменения
+## Type of change
 
-- [ ] Исправление ошибки
-- [ ] Новая возможность
-- [ ] Рефакторинг без изменения поведения
-- [ ] Документация
-- [ ] Сборка, зависимости или CI
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactoring with no behavior changes
+- [ ] Documentation
+- [ ] Build, dependencies, or CI
 
-## Проверка
+## Verification
 
-Укажите выполненные команды и важные ручные проверки.
+List the commands you ran and any important manual checks.
 
 ```text
 go test ./...
 ```
 
-## Совместимость
+## Compatibility
 
-- [ ] Изменение сохраняет совместимость.
-- [ ] Изменение ломает синтаксис, AST или публичный API и описано ниже.
-- [ ] Документация и примеры обновлены.
+- [ ] This change is backward compatible.
+- [ ] This change breaks the syntax, AST, or public API and is described below.
+- [ ] Documentation and examples have been updated.
 
 ## Checklist
 
-- [ ] Коммиты оформлены по правилам `CONTRIBUTING.md`.
-- [ ] Добавлены или обновлены тесты для изменённого поведения.
-- [ ] В diff нет секретов, локальных файлов и случайно сгенерированных артефактов.
-- [ ] Сгенерированные файлы обновлены вместе с их источниками.
+- [ ] Commits follow the conventions in `CONTRIBUTING.md`.
+- [ ] Tests have been added or updated for the changed behavior.
+- [ ] The diff contains no secrets, local files, or accidental generated artifacts.
+- [ ] Generated files have been updated together with their sources.
