@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Security report
     url: https://github.com/caramelang/caramel/security/advisories/new
-    about: Сообщить об уязвимости приватно, не раскрывая детали публично.
+    about: Report a vulnerability privately without disclosing details publicly.
   - name: Questions and support
     url: https://github.com/caramelang/caramel/discussions
-    about: Задать вопрос об использовании или разработке Caramel.
+    about: Ask a question about using or developing Caramel.

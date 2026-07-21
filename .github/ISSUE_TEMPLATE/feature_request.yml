@@ -1,5 +1,5 @@
 name: Feature request
-description: Предложить новую возможность или изменение синтаксиса Caramel.
+description: Suggest a new Caramel feature or syntax change.
 title: "feat: "
 labels:
   - enhancement
@@ -7,7 +7,7 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Область
+      label: Area
       options:
         - Parser and syntax
         - Analyzer and types
@@ -24,35 +24,35 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: Проблема
-      description: Какую задачу невозможно или неудобно решить сейчас?
+      label: Problem
+      description: What problem is currently impossible or inconvenient to solve?
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: Предлагаемое решение
-      description: Опишите поведение и, если нужно, покажите пример синтаксиса.
+      label: Proposed solution
+      description: Describe the desired behavior and include a syntax example if useful.
     validations:
       required: true
 
   - type: textarea
     id: alternatives
     attributes:
-      label: Альтернативы
-      description: Какие другие варианты вы рассматривали?
+      label: Alternatives
+      description: What other approaches have you considered?
 
   - type: textarea
     id: compatibility
     attributes:
-      label: Совместимость
-      description: Ломает ли предложение существующий синтаксис, AST или API?
+      label: Compatibility
+      description: Would this proposal break the existing syntax, AST, or API?
 
   - type: checkboxes
     id: checks
     attributes:
-      label: Проверки
+      label: Checks
       options:
-        - label: Я проверил открытые Issues и не нашёл аналогичное предложение.
+        - label: I searched open issues and found no similar proposal.
           required: true
