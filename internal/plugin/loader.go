@@ -10,9 +10,13 @@ import (
 
 	"github.com/caramelang/caramel/internal/models/plugin"
 	pluginpubinfo "github.com/caramelang/caramel/internal/models/plugin_pub_info"
+	"github.com/caramelang/caramel/pkg/branding"
 )
 
-var wasmHeader = []byte{0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00}
+var wasmV1Header = []byte{
+	0x00, 0x61, 0x73, 0x6d,
+	0x01, 0x00, 0x00, 0x00,
+}
 
 type LoadPluginArgs struct {
 	Path    *string
@@ -69,30 +73,30 @@ func LoadPlugin(l LoadPluginArgs) (*plugin.Plugin, error) {
 }
 
 func readPluginPubInfo(pluginDirectory string) (pluginpubinfo.PluginPubInfo, error) {
-	interfacePath := filepath.Join(pluginDirectory, "interface.json")
-	info, err := os.Stat(interfacePath)
+	infoPath := filepath.Join(pluginDirectory, branding.PluginInfoFileName)
+	info, err := os.Stat(infoPath)
 	if err != nil {
-		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: inspect %q: %w", interfacePath, err)
+		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: inspect %q: %w", infoPath, err)
 	}
 	if !info.Mode().IsRegular() {
-		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: %q is not a regular file", interfacePath)
+		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: %q is not a regular file", infoPath)
 	}
 
-	content, err := os.ReadFile(interfacePath)
+	content, err := os.ReadFile(infoPath)
 	if err != nil {
-		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: read %q: %w", interfacePath, err)
+		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: read %q: %w", infoPath, err)
 	}
 	var pubInfo pluginpubinfo.PluginPubInfo
 	if err := json.Unmarshal(content, &pubInfo); err != nil {
-		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: parse %q: %w", interfacePath, err)
+		return pluginpubinfo.PluginPubInfo{}, fmt.Errorf("load plugin: parse %q: %w", infoPath, err)
 	}
 	return pubInfo, nil
 }
 
 func readPluginWasm(pluginDirectory string) (string, []byte, error) {
 	candidates := []string{
-		filepath.Join(pluginDirectory, "plugin.wasm"),
-		filepath.Join(pluginDirectory, "out", "plugin.wasm"),
+		filepath.Join(pluginDirectory, branding.PluginWasmFileName),
+		filepath.Join(pluginDirectory, branding.PluginOutputDirectory, branding.PluginWasmFileName),
 	}
 
 	for _, candidate := range candidates {
@@ -111,7 +115,7 @@ func readPluginWasm(pluginDirectory string) (string, []byte, error) {
 		if err != nil {
 			return "", nil, fmt.Errorf("load plugin: read %q: %w", candidate, err)
 		}
-		if len(wasmBin) < len(wasmHeader) || !bytes.Equal(wasmBin[:len(wasmHeader)], wasmHeader) {
+		if len(wasmBin) < len(wasmV1Header) || !bytes.Equal(wasmBin[:len(wasmV1Header)], wasmV1Header[:]) {
 			return "", nil, fmt.Errorf("load plugin: %q is not a valid WebAssembly module", candidate)
 		}
 
@@ -125,6 +129,6 @@ func readPluginWasm(pluginDirectory string) (string, []byte, error) {
 	return "", nil, fmt.Errorf(
 		"load plugin: plugin.wasm not found in %q or %q",
 		pluginDirectory,
-		filepath.Join(pluginDirectory, "out"),
+		filepath.Join(pluginDirectory, branding.PluginOutputDirectory),
 	)
 }

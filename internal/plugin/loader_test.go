@@ -6,10 +6,15 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/caramelang/caramel/pkg/branding"
 )
 
 func TestLoadPluginReadsWasmIntoMemory(t *testing.T) {
-	for _, relativePath := range []string{"plugin.wasm", filepath.Join("out", "plugin.wasm")} {
+	for _, relativePath := range []string{
+		branding.PluginWasmFileName,
+		filepath.Join(branding.PluginOutputDirectory, branding.PluginWasmFileName),
+	} {
 		t.Run(relativePath, func(t *testing.T) {
 			directory := t.TempDir()
 			writeTestInterface(t, directory)
@@ -17,7 +22,7 @@ func TestLoadPluginReadsWasmIntoMemory(t *testing.T) {
 			if err := os.MkdirAll(filepath.Dir(wasmPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
-			wasm := append(append([]byte(nil), wasmHeader...), 0x00)
+			wasm := append(append([]byte(nil), wasmV1Header...), 0x00)
 			if err := os.WriteFile(wasmPath, wasm, 0o600); err != nil {
 				t.Fatal(err)
 			}
@@ -54,7 +59,7 @@ func TestLoadPluginRejectsMissingWasm(t *testing.T) {
 func TestLoadPluginRejectsInvalidWasm(t *testing.T) {
 	directory := t.TempDir()
 	writeTestInterface(t, directory)
-	if err := os.WriteFile(filepath.Join(directory, "plugin.wasm"), []byte("invalid"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, branding.PluginWasmFileName), []byte("invalid"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	_, err := LoadPlugin(LoadPluginArgs{Path: &directory})
@@ -65,7 +70,7 @@ func TestLoadPluginRejectsInvalidWasm(t *testing.T) {
 
 func TestLoadPluginRejectsInvalidInterface(t *testing.T) {
 	directory := t.TempDir()
-	if err := os.WriteFile(filepath.Join(directory, "interface.json"), []byte("{"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, branding.PluginInfoFileName), []byte("{"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	_, err := LoadPlugin(LoadPluginArgs{Path: &directory})
@@ -77,7 +82,7 @@ func TestLoadPluginRejectsInvalidInterface(t *testing.T) {
 func writeTestInterface(t *testing.T, directory string) {
 	t.Helper()
 	content := []byte(`{"type":1,"name":"example","author":"caramel","version":"v1.2.3"}`)
-	if err := os.WriteFile(filepath.Join(directory, "interface.json"), content, 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, branding.PluginInfoFileName), content, 0o600); err != nil {
 		t.Fatal(err)
 	}
 }

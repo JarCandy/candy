@@ -1,4 +1,3 @@
-// Package branding contains stable product metadata shared by Caramel packages.
 package branding
 
 const (
@@ -6,4 +5,8 @@ const (
 	ColorArt               = false
 	DatabaseFileName       = "caramel.sqlite"
 	InterfaceFileExtension = ".ci"
+
+	PluginInfoFileName    = "plugin.info"
+	PluginWasmFileName    = "plugin.wasm"
+	PluginOutputDirectory = "bin"
 )
