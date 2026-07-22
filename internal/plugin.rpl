@@ -1,0 +1,25 @@
+package models
+
+model PluginPubInfo {
+	Type TypePlugin // LE, GLP, APIP, WBC
+
+	Name string
+	Author string
+	Version string
+}
+
+enum TypePlugin {
+	Unknown
+	LE
+	GLP
+	APIP
+    WBC
+}
+
+model Plugin {
+	PubInfo PluginPubInfo
+	PathPluginSave string // home
+	WasmBin []byte
+
+	IsGlobal bool = true
+}

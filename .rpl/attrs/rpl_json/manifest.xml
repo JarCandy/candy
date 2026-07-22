@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<attr>
+  <name>json</name>
+  <author>rpl</author>
+  <version>0.1.0</version>
+  <displayName>Go JSON Tags</displayName>
+  <description>Adds validated encoding/json struct tags directly to generated Go models</description>
+  <entry>attr</entry>
+  <sdkVersion>2</sdkVersion>
+</attr>
