@@ -1,0 +1,39 @@
+use (
+    "caramel/compiler"
+)
+
+pub (
+    let model: compiler.decl(compiler.Tokens(compiler.TokenType.BlockStmt))
+    let interface: compiler.decl(compiler.Tokens(compiler.TokenType.BlockDecl))
+)
+
+pub (
+    enum type (
+        string
+
+        int
+        int8
+        int16
+        int32
+        int64
+
+        uint
+        uint8
+        uint16
+        uint32
+        uint64
+
+        float
+        float32
+        float64
+
+        complex
+        complex32
+        complex64
+
+        struct
+        error
+        nil
+        map(key: T, value: T)
+    )
+)

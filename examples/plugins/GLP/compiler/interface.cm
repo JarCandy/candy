@@ -1,0 +1,12 @@
+pub (
+    enum TokenType (
+        BlockStmt
+        BlockDecl
+    )
+    
+    let (
+        Tokens: method(tt: TokenType) -> filter
+
+        decl: method(f: filter)
+    )
+)
